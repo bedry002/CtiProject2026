@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python main.py)",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import spacy; print\\(spacy.__version__\\)\")",
+      "Bash(python -m spacy info)",
+      "Bash(pip install *)",
+      "Bash(python -m spacy download en_core_web_lg)",
+      "Bash(python train_topics.py)"
+    ]
+  }
+}

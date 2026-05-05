@@ -47,13 +47,22 @@ def _load_business_profile(path: pathlib.Path) -> BusinessProfile:
             geographies.append(part)
 
     keywords = [
-        # Threat types directly relevant to this environment
+        # Attack techniques
         "brute force", "brute-force", "bruteforce",
-        "backdoor", "rootkit", "exploit", "vulnerability", "cve",
-        "malware", "ransomware", "trojan",
-        "misconfiguration", "unpatched", "patch",
+        "exploit", "vulnerability", "cve", "remote code execution", "rce",
         "privilege escalation", "lateral movement",
-        "remote code execution", "rce",
+        "credential", "credential theft", "credential harvesting",
+        "exfiltration", "data exfiltration",
+        "persistence", "command and control", "c2",
+        # Malware classes
+        "backdoor", "rootkit", "malware", "ransomware", "trojan",
+        "rat", "remote access trojan", "keylogger", "stealer",
+        "botnet", "worm", "dropper", "loader",
+        # Supply chain & software threats
+        "supply chain", "typosquatting", "malicious package",
+        "pypi", "npm", "open source",
+        # Patch / defence posture
+        "unpatched", "patch", "misconfiguration", "zero day", "0day",
     ]
 
     return BusinessProfile(

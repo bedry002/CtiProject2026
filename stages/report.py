@@ -78,9 +78,25 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
         breakdown_html = (
             f'<span title="SBOM">S:{bd.get("sbom",0):.2f}</span> '
             f'<span title="Keyword">K:{bd.get("keyword",0):.2f}</span> '
-            f'<span title="Technology">T:{bd.get("technology",0):.2f}</span> '
+            f'<span title="IOC analysis">I:{bd.get("ioc",0):.2f}</span> '
+            f'<span title="Topic relevance">TR:{bd.get("topic",0):.2f}</span> '
+            f'<span title="Technology">T:{bd.get("tech",0):.2f}</span> '
             f'<span title="Context">C:{bd.get("context",0):.2f}</span>'
         ) if bd else ""
+        topic_cell = (
+            f'<code style="font-size:0.78em">{e.topic_label}</code>'
+            f'<br><small style="color:#6c757d">relevance: {e.topic_relevance_score:.2f}</small>'
+        ) if e.topic_label else "<em style='color:#6c757d'>outlier</em>"
+        ioc = e.ioc_summary
+        total_iocs = sum(ioc.values())
+        ioc_line = (
+            f'{total_iocs} IOCs &nbsp;'
+            f'<small style="color:#6c757d">'
+            f'vuln:{ioc.get("vulnerability",0)} '
+            f'net:{sum(ioc.get(t,0) for t in ("hostname","domain","ip-src","ip-dst","url"))} '
+            f'file:{sum(ioc.get(t,0) for t in ("md5","sha256","sha1","filename"))}'
+            f'</small>'
+        ) if total_iocs else "<em style='color:#6c757d'>none</em>"
         sbom_html = (
             ", ".join(f'<code style="font-size:0.78em">{r}</code>' for r in e.matched_sbom_components)
             or "<em style='color:#6c757d'>none</em>"
@@ -96,6 +112,8 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
             <code style="font-size:0.85em;font-weight:bold">{conf:.4f}</code><br>
             <small style="color:#6c757d;font-size:0.75em">{breakdown_html}</small>
           </td>
+          <td style="font-size:0.82em">{topic_cell}</td>
+          <td style="font-size:0.82em">{ioc_line}</td>
           <td style="font-size:0.82em">{sbom_html}</td>
           <td style="font-size:0.82em">{', '.join(e.matched_profile_terms)}</td>
           <td style="font-size:0.82em">{_entity_pills(e.entities)}</td>
@@ -141,8 +159,8 @@ Confidence threshold: {threshold}</p>
 <thead>
   <tr>
     <th>Band</th><th>Event ID</th><th>Date</th><th>Info</th>
-    <th>Confidence<br><small style="font-weight:normal">S=SBOM K=Keyword T=Tech C=Context</small></th>
-    <th>SBOM Hits</th><th>Matched Terms</th><th>NER Entities</th><th>Topic Keywords</th>
+    <th>Confidence<br><small style="font-weight:normal">S=SBOM K=Kw I=IOC TR=Topic T=Tech C=Ctx</small></th>
+    <th>Topic</th><th>IOCs</th><th>SBOM Hits</th><th>Matched Terms</th><th>NER Entities</th><th>Topic Keywords</th>
   </tr>
 </thead>
 <tbody>

@@ -35,7 +35,7 @@ def _bar(confidence: float, width: int = 200) -> str:
 def _entity_pills(entities: dict[str, list[str]]) -> str:
     if not entities:
         return "<em style='color:#6c757d'>none</em>"
-    pills = []
+    pills: list[str] = []
     colours = {"ORG": "#cfe2ff", "GPE": "#d1e7dd", "NORP": "#fff3cd",
                "PRODUCT": "#e2d9f3", "PERSON": "#fde8d8", "EVENT": "#f8d7da"}
     for label, values in entities.items():
@@ -52,7 +52,7 @@ def _entity_pills(entities: dict[str, list[str]]) -> str:
 def _topic_pills(topics: list[tuple[str, float]]) -> str:
     if not topics:
         return "<em style='color:#6c757d'>none</em>"
-    pills = []
+    pills: list[str] = []
     for word, score in topics[:5]:
         opacity = max(0.4, score * 8)
         pills.append(
@@ -70,7 +70,7 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
     medium = sum(1 for e in events if 0.25 <= (e.confidence or 0) < 0.50)
     low    = sum(1 for e in events if threshold <= (e.confidence or 0) < 0.25)
 
-    rows = []
+    rows: list[str] = []
     for e in sorted(events, key=lambda x: x.confidence or 0, reverse=True):
         conf = e.confidence or 0
         label, fg, bg = _band(conf)
@@ -174,7 +174,9 @@ Confidence threshold: {threshold}</p>
 class ReportStage(Stage):
     """Writes a scored-event HTML report after all other stages have run."""
 
-    name = "report"
+    @property
+    def name(self) -> str:
+        return "report"
 
     def __init__(
         self,

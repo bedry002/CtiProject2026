@@ -1,6 +1,7 @@
 """Stage 3 — BERTopic topic modelling over event text."""
 
 import logging
+from typing import Any
 from pipeline.base import Stage
 from pipeline.event import CurationEvent
 
@@ -58,7 +59,7 @@ def _resolve_relevance(topic_label: str) -> float:
     return TOPIC_RELEVANCE_MAP.get(topic_label, 0.0)
 
 
-def _event_to_text(raw: dict) -> str:
+def _event_to_text(raw: dict[str, Any]) -> str:
     """Concatenate all useful text fields from a raw MISP event dict."""
     parts = [
         raw.get("info", ""),
@@ -77,7 +78,7 @@ def _event_to_text(raw: dict) -> str:
     return " ".join(filter(None, parts))
 
 
-def _apply_topic(event: CurationEvent, topic_id: int, model) -> None:
+def _apply_topic(event: CurationEvent, topic_id: int, model: Any) -> None:
     """Populate event.topics, event.topic_label, and event.topic_relevance_score."""
     if topic_id == -1:
         event.topics = [("outlier", 0.0)]
@@ -99,9 +100,11 @@ def _apply_topic(event: CurationEvent, topic_id: int, model) -> None:
 class TopicModelStage(Stage):
     """Assigns a topic to each event and looks up its profile relevance."""
 
-    name = "topic_model"
+    @property
+    def name(self) -> str:
+        return "topic_model"
 
-    def __init__(self, model=None) -> None:
+    def __init__(self, model: Any = None) -> None:
         self._model = model
 
     def process_batch(self, events: list[CurationEvent]) -> list[CurationEvent]:

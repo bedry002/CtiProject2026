@@ -1,7 +1,8 @@
 """Stage — write curation confidence scores back to MISP as custom tags."""
 
 import logging
-from pymisp import PyMISP
+from typing import cast
+from pymisp import PyMISP, MISPTag, MISPEvent
 from pipeline.base import Stage
 from pipeline.event import CurationEvent
 
@@ -37,7 +38,9 @@ class MISPTaggerStage(Stage):
     Existing curation tags on the event are replaced.
     """
 
-    name = "misp_tagger"
+    @property
+    def name(self) -> str:
+        return "misp_tagger"
 
     def __init__(self, client: PyMISP, dry_run: bool = True) -> None:
         self._client = client
@@ -56,20 +59,20 @@ class MISPTaggerStage(Stage):
             logger.info("[dry-run] Would ensure tags exist: %s", list(needed))
             return
 
-        existing = {t["name"] for t in self._client.tags()}
+        existing = {t.name for t in cast(list[MISPTag], self._client.tags(pythonify=True))} 
         for name, (colour, exportable) in needed.items():
             if name not in existing:
-                self._client.add_tag(
-                    {"name": name, "colour": colour, "exportable": exportable}
-                )
+                tag_obj = MISPTag()
+                tag_obj.from_dict(name=name, colour=colour, exportable=exportable)
+                self._client.add_tag(tag_obj)  
                 logger.info("Created MISP tag: %s", name)
 
     def _remove_old_curation_tags(self, event_id: str) -> None:
         """Strip any existing curation tags before applying the new one."""
-        event = self._client.get_event(event_id, pythonify=True)
-        for tag in event.tags:
+        misp_event = cast(MISPEvent, self._client.get_event(event_id, pythonify=True)) 
+        for tag in misp_event.tags:
             if tag.name.startswith(f"{_NS}:"):
-                self._client.untag(event_id, tag.name)
+                self._client.untag(event_id, tag.name)  
 
     def process(self, event: CurationEvent) -> CurationEvent:
         if event.confidence is None:

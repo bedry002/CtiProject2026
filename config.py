@@ -20,7 +20,6 @@ _SBOM_PATH    = _BASE / "SBOM.json"
 def _load_business_profile(path: pathlib.Path) -> BusinessProfile:
     data = json.loads(path.read_text(encoding="utf-8"))
     org  = data["organisation"]
-    risk = data["risk_profile"]
 
     sectors = [
         "security research",
@@ -39,8 +38,7 @@ def _load_business_profile(path: pathlib.Path) -> BusinessProfile:
         "sudo", "privilege escalation",
         "python", "bash",
     ]
-
-    geographies = []
+    geographies: list[str] = []
     for part in org.get("primary_headquarters", "").split(","):
         part = part.strip()
         if part:

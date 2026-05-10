@@ -1,13 +1,17 @@
-"""Entry point — wire stages together and run the pipeline."""
+﻿"""Entry point â€” wire stages together and run the pipeline."""
 
+import spacy  # pyright: ignore[reportMissingImports]
+from bertopic import BERTopic  # pyright: ignore[reportMissingImports, reportUnknownVariableType]
 import logging
 import pathlib
 import urllib3
+from typing import Any
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
 from pipeline.runner import Pipeline
+from pymisp import PyMISP
 from stages.ingest import MISPIngestStage
 from stages.ner import NERStage
 from stages.topics import TopicModelStage
@@ -25,15 +29,13 @@ REPORT_PATH = pathlib.Path(__file__).parent / "reports" / "curation_report.html"
 TAGGER_DRY_RUN = True
 
 
-def build_pipeline(misp_client, event_count: int) -> Pipeline:
-    import spacy
-    from bertopic import BERTopic
+def build_pipeline(misp_client: PyMISP, event_count: int) -> Pipeline:
 
     nlp = spacy.load("en_core_web_lg")
     logging.info("Loaded spaCy model: en_core_web_lg")
 
     model_path = pathlib.Path(__file__).parent / "models" / "bertopic_model"
-    topic_model = BERTopic.load(str(model_path))
+    topic_model: Any = BERTopic.load(str(model_path))  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
     logging.info("Loaded BERTopic model from %s", model_path)
 
     return Pipeline([
@@ -46,7 +48,8 @@ def build_pipeline(misp_client, event_count: int) -> Pipeline:
 
 
 def main() -> None:
-    from pymisp import PyMISP
+    if not MISP_URL or not MISP_KEY:
+        raise RuntimeError("MISP_URL and MISP_KEY environment variables must be set")
     misp_client = PyMISP(MISP_URL, MISP_KEY, MISP_VERIFYCERT)
 
     ingest = MISPIngestStage(MISP_URL, MISP_KEY, MISP_VERIFYCERT)
@@ -61,7 +64,7 @@ def main() -> None:
 
     relevant = [e for e in results if (e.confidence or 0) >= CONFIDENCE_THRESHOLD]
     print(f"\n--- Curation Results: {len(relevant)}/{len(results)} relevant ---")
-    for event in sorted(relevant, key=lambda e: e.confidence, reverse=True):
+    for event in sorted(relevant, key=lambda e: e.confidence or 0.0, reverse=True):
         print(
             f"  [{event.confidence:.4f}] Event {event.misp_id} | "
             f"matched={event.matched_profile_terms}"

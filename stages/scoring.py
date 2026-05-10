@@ -135,7 +135,9 @@ def _ioc_score(raw: dict) -> tuple[float, dict[str, int]]:
 class ScoringStage(Stage):
     """Computes a weighted [0, 1] confidence score for each event."""
 
-    name = "scoring"
+    @property
+    def name(self) -> str:
+        return "scoring"
 
     def __init__(
         self,

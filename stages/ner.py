@@ -1,6 +1,7 @@
 """Stage 2 — Named Entity Recognition over event text."""
 
 import logging
+from typing import Any
 from pipeline.base import Stage
 from pipeline.event import CurationEvent
 
@@ -23,7 +24,7 @@ _TEXT_FIELDS = ("info", "description")
 _TEXT_ATTR_TYPES = {"text", "comment", "vulnerability"}
 
 
-def _event_to_text(raw: dict) -> str:
+def _event_to_text(raw: dict[str, Any]) -> str:
     parts = [raw.get(f, "") for f in _TEXT_FIELDS]
     parts += [
         a.get("value", "")
@@ -42,9 +43,11 @@ def _event_to_text(raw: dict) -> str:
 class NERStage(Stage):
     """Extracts named entities from MISP event text using spaCy."""
 
-    name = "ner"
+    @property
+    def name(self) -> str:
+        return "ner"
 
-    def __init__(self, nlp=None, entity_types: set[str] = THREAT_ENTITY_TYPES) -> None:
+    def __init__(self, nlp: Any = None, entity_types: set[str] = THREAT_ENTITY_TYPES) -> None:
         self._nlp = nlp
         self._entity_types = entity_types
 
@@ -57,7 +60,7 @@ class NERStage(Stage):
         doc = self._nlp(text)
 
         entities: dict[str, list[str]] = {}
-        seen: set[str] = set()
+        seen: set[tuple[str, str]] = set()
         for ent in doc.ents:
             if ent.label_ not in self._entity_types:
                 continue

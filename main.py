@@ -1,7 +1,7 @@
-﻿"""Entry point â€” wire stages together and run the pipeline."""
+"""Entry point; wire stages together and run the pipeline."""
 
-import spacy  # pyright: ignore[reportMissingImports]
-from bertopic import BERTopic  # pyright: ignore[reportMissingImports, reportUnknownVariableType]
+import spacy
+from bertopic import BERTopic
 import logging
 import pathlib
 import urllib3
@@ -30,12 +30,12 @@ TAGGER_DRY_RUN = True
 
 
 def build_pipeline(misp_client: PyMISP, event_count: int) -> Pipeline:
-
     nlp = spacy.load("en_core_web_lg")
     logging.info("Loaded spaCy model: en_core_web_lg")
 
     model_path = pathlib.Path(__file__).parent / "models" / "bertopic_model"
-    topic_model: Any = BERTopic.load(str(model_path))  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    topic_model: Any = BERTopic.load(str(model_path))
+    topic_model = BERTopic.load(str(model_path))
     logging.info("Loaded BERTopic model from %s", model_path)
 
     return Pipeline([

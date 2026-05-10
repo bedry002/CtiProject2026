@@ -1,13 +1,13 @@
 """Central configuration — edit this to describe your organisation and MISP connection."""
-
+import os
 import json
 import pathlib
 import re
 from stages.scoring import BusinessProfile
 from pipeline.sbom import load_sbom
 
-MISP_URL = "https://192.168.1.173:4433"
-MISP_KEY = "0ueVwp81PO3iEbUOJfA07sPAx1Jj78rRwTbFW1vM"
+MISP_URL = os.getenv('MISP_URL')
+MISP_KEY = os.getenv('MISP_KEY')
 MISP_VERIFYCERT = False
 
 _STRIP_PARENS = re.compile(r"\s*\([^)]*\)")

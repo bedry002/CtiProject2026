@@ -1,0 +1,17 @@
+{
+  "_comment": "DT project UUIDs must be obtained manually from DT frontend at http://192.168.4.38:1011 before running the orchestrator. Create a project in DT for each container, then copy the UUID from its URL or settings page.",
+  "targets": [
+    {
+      "container_name": "opencti",
+      "sbom_file": "/opt/sbom-output/opencti-sbom.json",
+      "dt_project_uuid": "4f5619cc-46aa-420e-8859-e3435e19df7b",
+      "dt_project_name": "OpenCTI"
+    },
+    {
+      "container_name": "misp",
+      "sbom_file": "/opt/sbom-output/misp-sbom.json",
+      "dt_project_uuid": "5b22c269-5cdb-4494-9731-23cdc7b6ec8e",
+      "dt_project_name": "MISP"
+    }
+  ]
+}

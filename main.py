@@ -1,6 +1,5 @@
 """Entry point; wire stages together and run the pipeline."""
 
-import spacy
 from bertopic import BERTopic
 import logging
 import pathlib
@@ -33,15 +32,12 @@ TAGGER_DRY_RUN = True
 
 
 def build_pipeline(misp_client: PyMISP, event_count: int) -> Pipeline:
-    nlp = spacy.load("en_core_web_lg")
-    logging.info("Loaded spaCy model: en_core_web_lg")
-
     model_path = pathlib.Path(__file__).parent / "models" / "bertopic_model"
     topic_model: Any = BERTopic.load(str(model_path))
     logging.info("Loaded BERTopic model from %s", model_path)
 
     return Pipeline([
-        NERStage(nlp),
+        NERStage(),
         TopicModelStage(topic_model),
         ScoringStage(BUSINESS_PROFILE, SBOM_PROFILE),
         MISPTaggerStage(misp_client, dry_run=TAGGER_DRY_RUN),

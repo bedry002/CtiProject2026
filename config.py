@@ -1,6 +1,8 @@
 """Central configuration — edit this to describe your organisation and MISP connection."""
 import os
 import json
+from dotenv import load_dotenv
+load_dotenv()
 import pathlib
 import re
 from stages.scoring import BusinessProfile

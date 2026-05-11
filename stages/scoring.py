@@ -61,7 +61,12 @@ def _haystack(event: CurationEvent) -> str:
             a.get("value", "") for a in raw.get("Attribute", [])
             if a.get("type") in {"text", "comment", "vulnerability"}
         ),
-        " ".join(v for vals in event.entities.values() for v in vals),
+        " ".join(
+            item["text"] for vals in event.entities.values()
+            if isinstance(vals, list)
+            for item in vals
+            if isinstance(item, dict) and "text" in item
+        ),
         " ".join(t for t, _ in event.topics),
     ]
     return " ".join(filter(None, parts)).lower()

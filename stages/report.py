@@ -32,21 +32,28 @@ def _bar(confidence: float, width: int = 200) -> str:
     )
 
 
-def _entity_pills(entities: dict[str, list[str]]) -> str:
+def _entity_pills(entities: dict) -> str:
     if not entities:
         return "<em style='color:#6c757d'>none</em>"
     pills: list[str] = []
-    colours = {"ORG": "#cfe2ff", "GPE": "#d1e7dd", "NORP": "#fff3cd",
-               "PRODUCT": "#e2d9f3", "PERSON": "#fde8d8", "EVENT": "#f8d7da"}
+    colours = {
+        "cves": "#f8d7da", "ttps": "#fff3cd", "iocs": "#cfe2ff",
+        "threat_actors": "#e2d9f3", "sectors": "#d1e7dd",
+        "software": "#fde8d8", "geographies": "#d1e7dd",
+        "malware": "#f8d7da",
+    }
     for label, values in entities.items():
+        if not isinstance(values, list):
+            continue
         bg = colours.get(label, "#e9ecef")
-        for v in values:
+        for item in values:
+            text = item["text"] if isinstance(item, dict) else str(item)
             pills.append(
                 f'<span style="background:{bg};padding:1px 6px;border-radius:10px;'
                 f'font-size:0.78em;margin:1px;display:inline-block">'
-                f'<b>{label}</b> {v}</span>'
+                f'<b>{label}</b> {text}</span>'
             )
-    return " ".join(pills)
+    return " ".join(pills) or "<em style='color:#6c757d'>none</em>"
 
 
 def _topic_pills(topics: list[tuple[str, float]]) -> str:

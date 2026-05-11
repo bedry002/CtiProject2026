@@ -7,7 +7,7 @@ from stages.scoring import BusinessProfile
 from pipeline.sbom import load_sbom
 
 MISP_URL = os.getenv('MISP_URL')
-MISP_KEY = os.getenv('MISP_KEY')
+MISP_KEY = os.getenv('MISP_KEY') or os.getenv('MISP_API_KEY')
 MISP_VERIFYCERT = False
 
 _STRIP_PARENS = re.compile(r"\s*\([^)]*\)")

@@ -6,6 +6,9 @@ import logging
 import pathlib
 import urllib3
 from typing import Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -35,7 +38,6 @@ def build_pipeline(misp_client: PyMISP, event_count: int) -> Pipeline:
 
     model_path = pathlib.Path(__file__).parent / "models" / "bertopic_model"
     topic_model: Any = BERTopic.load(str(model_path))
-    topic_model = BERTopic.load(str(model_path))
     logging.info("Loaded BERTopic model from %s", model_path)
 
     return Pipeline([

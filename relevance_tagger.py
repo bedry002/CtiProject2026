@@ -116,7 +116,7 @@ misp.publish(event_id)
 print("event published!")
 
 # read it back to check tags saved correctly
-print("\n--- verification ---")
+print("\--- verification ---")
 check = misp.get_event(event_id)
 for attr in check["Event"]["Attribute"]:
     tags = [t["name"] for t in attr.get("Tag", [])]

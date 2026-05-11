@@ -91,7 +91,12 @@ event = misp.add_event({
 })
 
 event_id = event["Event"]["id"]
+
+# tag the event itself so MISP stops complaining
+misp.tag(event["Event"]["uuid"], "feed:curated")
+misp.tag(event["Event"]["uuid"], "tlp:white")
 print("created event:", event_id)
+
 
 # loop through each indicator, add it to the event and tag it
 for item in feed:
@@ -114,6 +119,7 @@ for item in feed:
 # publish so it shows up in the dashboard
 misp.publish(event_id)
 print("event published!")
+
 
 # read it back to check tags saved correctly
 print("\--- verification ---")

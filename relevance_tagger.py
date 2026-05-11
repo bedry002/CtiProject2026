@@ -133,6 +133,6 @@ for attr in check["Event"]["Attribute"]:
 #        feed.append({
 #            "type":       parts[0],
 #            "value":      parts[1],
-#            "confidence": int(parts[2])
+#            "confidence": int(parts[2]) - Change value to 50 if the .txt file doesnt have a confidence value
 #        })
 #print("loaded feed.txt")

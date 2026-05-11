@@ -1,4 +1,3 @@
-# main.py
 # this script takes threat data and sends it to MISP
 # it also tags each threat with how relevant it is to our org
 # based on what software/assets the org actually uses

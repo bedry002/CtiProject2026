@@ -8,7 +8,8 @@ from typing import Any
 class CurationEvent:
     """Represents a single MISP event as it flows through the pipeline."""
 
-    misp_id: str
+    misp_id: str          # numeric database ID (e.g. "1574")
+    misp_uuid: str        # MISP UUID — required by tag/untag API calls
     raw: dict[str, Any]
 
     # Populated by NER stage

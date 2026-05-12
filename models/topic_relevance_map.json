@@ -1,0 +1,8 @@
+{
+  "phishing_phishing t1566_t1566": 0.4,
+  "attack_malicious_including": 0.1,
+  "ransomware_discovery_data": 0.2,
+  "files information_web_t1566": 0.1,
+  "application_exploit_public-facing application": 0.2,
+  "muddywater_mirai_turla": 0.4
+}

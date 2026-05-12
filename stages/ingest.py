@@ -24,7 +24,7 @@ class MISPIngestStage(Stage):
         logger.info("Fetching up to %d events from MISP", limit)
         raw_events = cast(list[MISPEvent], self._client.search(limit=limit, pythonify=True))
         events = [
-            CurationEvent(misp_id=str(e.id), raw=e.to_dict())
+            CurationEvent(misp_id=str(e.id), misp_uuid=str(e.uuid), raw=e.to_dict())
             for e in raw_events
         ]
         logger.info("Fetched %d events", len(events))

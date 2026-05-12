@@ -28,7 +28,7 @@ from config import (
 REPORT_PATH = pathlib.Path(__file__).parent / "reports" / "curation_report.html"
 
 # Set to False once you are satisfied the tags are correct
-TAGGER_DRY_RUN = True
+TAGGER_DRY_RUN = False
 
 
 def build_pipeline(misp_client: PyMISP, event_count: int) -> Pipeline:

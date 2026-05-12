@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 import requests # for HTTP calls 
 from dotenv import load_dotenv # loading .env file
 
-REPO_ROOT = pathlib.Path(__file__).parent.parent 
+REPO_ROOT = pathlib.Path(__file__).resolve().parent 
 TARGETS_PATH = REPO_ROOT / "config" / "targets.json"
 OUTPUT_PATH = REPO_ROOT / "Assets" / "SBOM.json"
 ENV_PATH = REPO_ROOT / ".env"
@@ -18,6 +18,9 @@ ENV_PATH = REPO_ROOT / ".env"
 POLL_INTERVAL_SECONDS = 5 # 5sec checks for the upload
 POLL_TIMEOUT_SECONDS = 300 # 5mins per target
 COMPONENT_PAGE_SIZE = 1000
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s", datefmt="%H:%M:%S")
+log = logging.getLogger("orchestrator")
 
 class DependencyTrackClient:
     #Class for all the DT interactions

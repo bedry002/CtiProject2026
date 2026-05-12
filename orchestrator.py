@@ -1,6 +1,5 @@
 import argparse
 import json
-import logging
 import os
 import pathlib
 import sys
@@ -8,35 +7,27 @@ import time
 import uuid
 from datetime import datetime, timezone
 
-import requests
-from dotenv import load_dotenv
+import requests # for HTTP calls 
+from dotenv import load_dotenv # loading .env file
 
-REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
+REPO_ROOT = pathlib.Path(__file__).parent.parent 
 TARGETS_PATH = REPO_ROOT / "config" / "targets.json"
 OUTPUT_PATH = REPO_ROOT / "Assets" / "SBOM.json"
 ENV_PATH = REPO_ROOT / ".env"
 
-POLL_INTERVAL_SECONDS = 5
-POLL_TIMEOUT_SECONDS = 300  # 5 minutes per target
+POLL_INTERVAL_SECONDS = 5 # 5sec checks for the upload
+POLL_TIMEOUT_SECONDS = 300 # 5mins per target
 COMPONENT_PAGE_SIZE = 1000
 
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    datefmt="%H:%M:%S",
-)
-log = logging.getLogger("orchestrator")
-
 class DependencyTrackClient:
-    """Thin wrapper around the DT API endpoints we actually use."""
-
-    def __init__(self, base_url: str, api_key: str):
+    #Class for all the DT interactions
+    def __init__(self, base_url, api_key):
         self.base_url = base_url.rstrip("/")
         self.headers = {"X-Api-Key": api_key}
 
-    def upload_sbom(self, project_uuid: str, sbom_path: pathlib.Path) -> str:
-        """Upload an SBOM via multipart form. Returns the processing token."""
+    # curl -X POST address/api/v1/bom -F "project=uuid" -F "bom=file.json"
+    def upload_sbom(self, project_uuid, sbom_path):
+        
         url = f"{self.base_url}/api/v1/bom"
         log.info("Uploading %s to project %s", sbom_path.name, project_uuid)
 
@@ -49,42 +40,43 @@ class DependencyTrackClient:
                 timeout=120,
             )
 
-        response.raise_for_status()
-        token = response.json().get("token")
+        response.raise_for_status() # ask for the token
+        token = response.json().get("token") # token for checking
         if not token:
             raise RuntimeError(f"DT did not return a token: {response.text}")
         log.info("Upload accepted, token=%s", token)
         return token
 
-    def wait_for_processing(self, token: str) -> None:
-        """Poll the token endpoint until DT finishes processing the BOM."""
+    def wait_for_processing(self, token):
+        # Poll the token endpoint until DT finishes processing the BOM.
         url = f"{self.base_url}/api/v1/bom/token/{token}"
         deadline = time.time() + POLL_TIMEOUT_SECONDS
 
+        #if the time is less than 5mins i.e., not hung
         while time.time() < deadline:
             response = requests.get(url, headers=self.headers, timeout=30)
-            response.raise_for_status()
+            response.raise_for_status() # ask if the processing is done
             processing = response.json().get("processing", True)
 
-            if not processing:
+            if not processing: # if ({"processing" = false}) meaning the upload is done
                 log.info("Processing complete for token %s", token)
                 return
 
-            log.info("Still processing... (token=%s)", token)
-            time.sleep(POLL_INTERVAL_SECONDS)
+            log.info("Still processing... (token=%s)", token) # if its true, meaning still processing
+            time.sleep(POLL_INTERVAL_SECONDS) # wait a bit and try again
 
         raise TimeoutError(
             f"DT did not finish processing within {POLL_TIMEOUT_SECONDS}s "
             f"(token={token})"
         )
 
-    def fetch_components(self, project_uuid: str) -> list[dict]:
-        """Page through /api/v1/component for the project and return them all."""
+    def fetch_components(self, project_uuid):
+        # Page through /api/v1/component for the project and return them all in batches of a 1000
         components: list[dict] = []
         page = 1
 
         while True:
-            url = f"{self.base_url}/api/v1/component/project/{project_uuid}"
+            url = f"{self.base_url}/api/v1/component/project/{project_uuid}" # project api access
             params = {"pageSize": COMPONENT_PAGE_SIZE, "pageNumber": page}
             response = requests.get(
                 url, headers=self.headers, params=params, timeout=60
@@ -104,8 +96,8 @@ class DependencyTrackClient:
 
         return components
 
-    def fetch_vulnerabilities(self, component_uuid: str) -> list[dict]:
-        """Get vulnerabilities for a single component."""
+    def fetch_vulnerabilities(self, component_uuid):
+        #Get vulnerabilities for a single component
         url = f"{self.base_url}/api/v1/vulnerability/component/{component_uuid}"
         try:
             response = requests.get(url, headers=self.headers, timeout=30)
@@ -114,7 +106,8 @@ class DependencyTrackClient:
         except requests.HTTPError:
             return []
 
-def assign_criticality(component: dict, has_vulnerabilities: bool) -> str:
+# Each component gets a special weight to fit the parser
+def assign_criticality(component, has_vulnerabilities):
     """Rules:
        - Operating systems -> high
        - Components with known vulnerabilities -> high
@@ -132,8 +125,8 @@ def assign_criticality(component: dict, has_vulnerabilities: bool) -> str:
     return "low"
 
 
-def dt_classifier_to_cyclonedx_type(classifier: str | None) -> str:
-    """Map DT's classifier enum to CycloneDX component types."""
+def dt_classifier_to_cyclonedx_type(classifier):
+    # Translates the DT language to CycloneDX format
     mapping = {
         "APPLICATION": "application",
         "FRAMEWORK": "framework",
@@ -146,20 +139,16 @@ def dt_classifier_to_cyclonedx_type(classifier: str | None) -> str:
     }
     return mapping.get((classifier or "").upper(), "library")
 
-
-def build_cyclonedx_component(
-    dt_component: dict,
-    has_vulnerabilities: bool,
-    source_project: str,
-) -> dict:
-    """Convert a DT component record to a CycloneDX 1.6 component."""
+# Func to pull name, version, CPE, purl, and supplier
+def build_cyclonedx_component(dt_component, has_vulnerabilities, source_project):
+    
     name = dt_component.get("name", "unknown")
     version = dt_component.get("version", "")
     cpe = dt_component.get("cpe")
     purl = dt_component.get("purl")
     classifier = dt_component.get("classifier")
 
-    # Best-effort supplier extraction
+    # best-effort supplier extraction
     supplier_name = (
         (dt_component.get("supplier") or {}).get("name")
         or dt_component.get("group")
@@ -180,10 +169,11 @@ def build_cyclonedx_component(
     if has_vulnerabilities:
         properties.append({"name": "has_vulnerabilities", "value": "true"})
 
-    component: dict = {
-        "type": dt_classifier_to_cyclonedx_type(classifier),
-        "bom-ref": dt_component.get("uuid") or f"{name}@{version}",
-        "name": name,
+    # vulnerable components
+    component = {
+        "type": dt_classifier_to_cyclonedx_type(classifier), # vulnerability type
+        "bom-ref": dt_component.get("uuid") or f"{name}@{version}", # source project uuid and name
+        "name": name, # component name
         "version": version,
         "supplier": {"name": supplier_name},
         "properties": properties,
@@ -197,11 +187,12 @@ def build_cyclonedx_component(
     return component
 
 
-def dedupe_components(components: list[dict]) -> list[dict]:
-    """Drop duplicates that share the same (cpe + version) or (name + version)."""
+def dedupe_components(components):
+    # Drop duplicates that share the same (cpe + version) or (name + version).
     seen: set[tuple] = set()
     unique: list[dict] = []
 
+    # check every component for duplicates
     for c in components:
         key = (c.get("cpe") or c.get("name"), c.get("version"))
         if key in seen:
@@ -213,8 +204,7 @@ def dedupe_components(components: list[dict]) -> list[dict]:
 
 
 def build_final_sbom(all_components: list[dict]) -> dict:
-    """Wrap merged components in a CycloneDX 1.6 envelope matching the existing
-    Assets/SBOM.json structure."""
+    #Wrap merged components in a CycloneDX envelope matching the existing Assets/SBOM.json structure
     return {
         "bomFormat": "CycloneDX",
         "specVersion": "1.6",
@@ -251,8 +241,8 @@ def build_final_sbom(all_components: list[dict]) -> dict:
         "components": all_components,
     }
 
-
-def load_targets(filter_names: list[str] | None) -> list[dict]:
+# for putting in the target json files componenets in the script so syft knows what to scan
+def load_targets(filter_names):
     if not TARGETS_PATH.exists():
         log.error("targets.json not found at %s", TARGETS_PATH)
         sys.exit(1)
@@ -272,8 +262,9 @@ def load_targets(filter_names: list[str] | None) -> list[dict]:
     return targets
 
 
-def process_target(target: dict, client: DependencyTrackClient) -> list[dict]:
-    """Run the full pipeline for one target — upload, wait, fetch, transform."""
+def process_target(target, client):
+    # Run the full pipeline for one target — upload, wait, fetch, transform. Process each sbom seperately
+    # instead of main fucntion, isolate each sbom here to ake sure the sboms dont interrupt each other
     name = target["container_name"]
     sbom_path = pathlib.Path(target["sbom_file"])
     project_uuid = target["dt_project_uuid"]
@@ -302,32 +293,12 @@ def process_target(target: dict, client: DependencyTrackClient) -> list[dict]:
 
     return cyclonedx_components
 
-
-def print_summary(components: list[dict], vuln_count: int) -> None:
-    by_crit: dict[str, int] = {"high": 0, "medium": 0, "low": 0}
-    for c in components:
-        crit = next(
-            (p["value"] for p in c.get("properties", []) if p["name"] == "criticality"),
-            "low",
-        )
-        by_crit[crit] = by_crit.get(crit, 0) + 1
-
-    log.info("=" * 50)
-    log.info("Pipeline complete")
-    log.info("Total components: %d", len(components))
-    log.info("  high: %d", by_crit["high"])
-    log.info("  medium: %d", by_crit["medium"])
-    log.info("  low: %d", by_crit["low"])
-    log.info("Components with vulnerabilities: %d", vuln_count)
-    log.info("=" * 50)
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(description="SBOM ingestion orchestrator")
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Run the full pipeline but skip writing Assets/SBOM.json",
+        help="Run the full pipeline but skip writing Assets/SBOM.json for now",
     )
     parser.add_argument(
         "--targets",
@@ -344,35 +315,36 @@ def main() -> None:
         log.error("DT_API_KEY not set - check your .env file at %s", ENV_PATH)
         sys.exit(1)
 
-    client = DependencyTrackClient(base_url, api_key)
-    targets = load_targets(args.targets)
+    client = DependencyTrackClient(base_url, api_key) # run the entire dt class
+    targets = load_targets(args.targets) # load the target sbom files
 
     log.info("Processing %d target(s): %s",
              len(targets), [t["container_name"] for t in targets])
 
-    all_components: list[dict] = []
+    all_components = []
+    # process each sbom file
     for target in targets:
         components = process_target(target, client)
         all_components.extend(components)
 
+    # dedupe the combined vulnerable components
     all_components = dedupe_components(all_components)
     vuln_count = sum(
         1 for c in all_components
         if any(p["name"] == "has_vulnerabilities" for p in c.get("properties", []))
     )
 
+    # final sbom
     sbom = build_final_sbom(all_components)
 
+    # not replacing the sbom just yet
     if args.dry_run:
         log.info("Dry run - not writing %s", OUTPUT_PATH)
-    else:
+    else: # or replace the existing sbom in the ASSETS folder
         OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
         with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
             json.dump(sbom, f, indent=2)
         log.info("Wrote %s", OUTPUT_PATH)
-
-    print_summary(all_components, vuln_count)
-
 
 if __name__ == "__main__":
     main()

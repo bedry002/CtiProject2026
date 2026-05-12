@@ -56,18 +56,28 @@ def _entity_pills(entities: dict) -> str:
     return " ".join(pills) or "<em style='color:#6c757d'>none</em>"
 
 
-def _topic_pills(topics: list[tuple[str, float]]) -> str:
-    if not topics:
-        return "<em style='color:#6c757d'>none</em>"
-    pills: list[str] = []
-    for word, score in topics[:5]:
-        opacity = max(0.4, score * 8)
-        pills.append(
-            f'<span style="background:rgba(13,110,253,{opacity:.2f});color:white;'
-            f'padding:1px 6px;border-radius:10px;font-size:0.78em;margin:1px;'
-            f'display:inline-block">{word}</span>'
-        )
-    return " ".join(pills)
+def _topic_cell(topic_label: str, topic_relevance: float, topics: list[tuple[str, float]]) -> str:
+    """Render a single consolidated topic cell: label + relevance + keyword tooltip."""
+    if not topic_label or topic_label == "outlier":
+        return "<em style='color:#6c757d'>outlier</em>"
+
+    # Tooltip shows full keyword list with c-TF-IDF scores on hover
+    tooltip = ", ".join(f"{w} ({s:.3f})" for w, s in topics[:8]) if topics else ""
+
+    # Top 4 keywords inline (word only — scores in tooltip)
+    kw_text = " · ".join(w for w, _ in topics[:4]) if topics else ""
+
+    relevance_colour = "#1a7a3e" if topic_relevance >= 0.6 else (
+        "#856404" if topic_relevance >= 0.3 else "#6c757d"
+    )
+
+    return (
+        f'<span title="{tooltip}" style="cursor:help">'
+        f'<code style="font-size:0.78em">{topic_label}</code>'
+        f'</span><br>'
+        f'<small style="color:{relevance_colour};font-weight:bold">relevance: {topic_relevance:.2f}</small><br>'
+        f'<small style="color:#6c757d">{kw_text}</small>'
+    )
 
 
 def _render(events: list[CurationEvent], all_count: int, threshold: float) -> str:
@@ -90,10 +100,7 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
             f'<span title="Technology">T:{bd.get("tech",0):.2f}</span> '
             f'<span title="Context">C:{bd.get("context",0):.2f}</span>'
         ) if bd else ""
-        topic_cell = (
-            f'<code style="font-size:0.78em">{e.topic_label}</code>'
-            f'<br><small style="color:#6c757d">relevance: {e.topic_relevance_score:.2f}</small>'
-        ) if e.topic_label else "<em style='color:#6c757d'>outlier</em>"
+        topic_cell = _topic_cell(e.topic_label, e.topic_relevance_score, e.topics)
         ioc = e.ioc_summary
         total_iocs = sum(ioc.values())
         ioc_line = (
@@ -124,7 +131,6 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
           <td style="font-size:0.82em">{sbom_html}</td>
           <td style="font-size:0.82em">{', '.join(e.matched_profile_terms)}</td>
           <td style="font-size:0.82em">{_entity_pills(e.entities)}</td>
-          <td style="font-size:0.82em">{_topic_pills(e.topics)}</td>
         </tr>""")
 
     return f"""<!DOCTYPE html>
@@ -156,9 +162,9 @@ Confidence threshold: {threshold}</p>
 <div class="stat-grid">
   <div class="stat"><div class="value">{all_count}</div><div class="label">Events evaluated</div></div>
   <div class="stat"><div class="value">{len(relevant)}</div><div class="label">Above threshold</div></div>
-  <div class="stat"><div class="value" style="color:#1a7a3e">{high}</div><div class="label">High (&ge;0.15)</div></div>
-  <div class="stat"><div class="value" style="color:#856404">{medium}</div><div class="label">Medium (0.08–0.15)</div></div>
-  <div class="stat"><div class="value" style="color:#721c24">{low}</div><div class="label">Low (threshold–0.08)</div></div>
+  <div class="stat"><div class="value" style="color:#1a7a3e">{high}</div><div class="label">High (&ge;0.50)</div></div>
+  <div class="stat"><div class="value" style="color:#856404">{medium}</div><div class="label">Medium (0.25–0.50)</div></div>
+  <div class="stat"><div class="value" style="color:#721c24">{low}</div><div class="label">Low (0.10–0.25)</div></div>
 </div>
 
 <h2>Event Scores</h2>
@@ -167,7 +173,8 @@ Confidence threshold: {threshold}</p>
   <tr>
     <th>Band</th><th>Event ID</th><th>Date</th><th>Info</th>
     <th>Confidence<br><small style="font-weight:normal">S=SBOM K=Kw I=IOC TR=Topic T=Tech C=Ctx</small></th>
-    <th>Topic</th><th>IOCs</th><th>SBOM Hits</th><th>Matched Terms</th><th>NER Entities</th><th>Topic Keywords</th>
+    <th>Topic<br><small style="font-weight:normal">hover for keywords</small></th>
+    <th>IOCs</th><th>SBOM Hits</th><th>Matched Terms</th><th>NER Entities</th>
   </tr>
 </thead>
 <tbody>

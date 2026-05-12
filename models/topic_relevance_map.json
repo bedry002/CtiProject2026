@@ -1,8 +1,20 @@
 {
-  "phishing_phishing t1566_t1566": 0.4,
-  "attack_malicious_including": 0.1,
-  "ransomware_discovery_data": 0.2,
-  "files information_web_t1566": 0.1,
-  "application_exploit_public-facing application": 0.2,
-  "muddywater_mirai_turla": 0.4
+  "android_banking_trojan": 0.4,
+  "extensions_chrome_browser": 0.1,
+  "medium_data_indicators": 0.1,
+  "dns_domains_investment": 0.1,
+  "phishing_credential_microsoft": 0.5,
+  "north_korean_korea": 0.1,
+  "github_repositories_claude": 0.4,
+  "supply chain_supply_teampcp": 0.4,
+  "axios_npm_supply chain": 0.4,
+  "zoom_software_meeting": 0.1,
+  "ransomware_encryption_movement": 0.4,
+  "iranian_muddywater_apt": 0.1,
+  "espionage_government_plugx": 0.2,
+  "botnet_exploitation_vulnerability": 0.4,
+  "backdoor_apt_government": 0.4,
+  "search engine_seo_tds": 0.2,
+  "malware_rat_clickfix": 0.4,
+  "macos_stealer_cryptocurrency": 0.2
 }

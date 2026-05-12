@@ -27,7 +27,7 @@ from config import (
 
 REPORT_PATH = pathlib.Path(__file__).parent / "reports" / "curation_report.html"
 
-# Set to False once you are satisfied the tags are correct
+# Set to False once the tags are correct
 TAGGER_DRY_RUN = False
 
 

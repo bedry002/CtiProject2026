@@ -1,0 +1,169 @@
+{
+  "profile_id": "uuid-v4-vanguard-biopharma-2026-005",
+  "profile_version": "1.0",
+  "created": "2026-05-18T00:00:00Z",
+  "modified": "2026-05-18T00:00:00Z",
+  "organisation": {
+    "name": "Vanguard BioPharma",
+    "naics_code": "3254",
+    "naics_label": "Pharmaceutical and Medicine Manufacturing",
+    "isic_code": "2100",
+    "size": "large",
+    "jurisdiction": [ "US", "CH" ],
+    "primary_headquarters": "Boston, Massachusetts, United States",
+    "business_units": [ "Research", "Clinical Operations", "Quality Assurance", "Manufacturing IT", "Regulatory Affairs" ],
+    "critical_business_functions": [
+      "Drug discovery and molecular modeling",
+      "Clinical trial data processing",
+      "Laboratory information management",
+      "Regulatory submission and quality reporting"
+    ],
+    "critical_processes": [
+      "Sample data ingestion",
+      "Laboratory workflow execution",
+      "Electronic signature approval",
+      "Regulatory evidence packaging"
+    ],
+    "regulatory_frameworks": [ "GxP", "HIPAA-aligned controls", "ISO 27001", "21 CFR Part 11" ]
+  },
+  "risk_profile": {
+    "severity_threshold": "high",
+    "maturity_level": "managed",
+    "risk_tolerance": "low",
+    "alert_volume": "medium",
+    "priority_asset_classes": [
+      "Laboratory research compute nodes",
+      "Clinical trial data repositories",
+      "LIMS and electronic signature systems"
+    ],
+    "regulatory_flags": [ "health_data", "research_ip" ],
+    "recent_incidents": [],
+    "threats": [ "ip_theft", "ransomware", "credential_attacks" ]
+  },
+  "technology_stack": {
+    "endpoint": {
+      "os_workstation": [ "Windows 11 Enterprise", "RHEL 9" ],
+      "os_server": [ "RHEL 9", "Windows Server 2022" ],
+      "edr_solution": [ "CrowdStrike Falcon" ],
+      "mdm": [ "Microsoft Intune" ],
+      "device_management": "Intune for corporate endpoints and dedicated lab endpoint controls",
+      "patch_management": "Validated patch windows aligned to lab scheduling and change control"
+    },
+    "virtualisation": {
+      "hypervisor": "VMware vSphere 8",
+      "hypervisor_type": "Type-1",
+      "host_os": "VMware ESXi",
+      "guest_os": "RHEL and Windows mixed research workloads",
+      "network_mode": "Isolated research network zones with controlled egress",
+      "snapshot_policy": "Versioned snapshots before model and analysis pipeline updates"
+    },
+    "identity": {
+      "directory_service": [ "Okta", "Active Directory" ],
+      "mfa_solution": [ "Okta Verify" ],
+      "sso": [ "SAML", "OIDC" ],
+      "pam_solution": [ "BeyondTrust" ],
+      "identity_federation": "SAML/OIDC federation for lab and compliance SaaS",
+      "password_policy": "Minimum 15 characters with strict privileged account controls",
+      "passwordless_auth": false
+    },
+    "network": {
+      "firewall_vendor": [ "Palo Alto Networks", "Aruba" ],
+      "vpn_solution": [ "GlobalProtect" ],
+      "proxy": [ "Secure research web gateway" ],
+      "network_monitoring": [ "Zeek", "NetFlow telemetry" ],
+      "dns_security": "Filtered DNS with malware and command-and-control domain blocking",
+      "network_segmentation": "advanced"
+    },
+    "cloud": {
+      "cloud_platform": [ "AWS" ],
+      "cloud_native": true,
+      "container_platform": [ "Amazon EKS" ],
+      "cloud_security_tools": [ "AWS GuardDuty", "AWS Security Hub" ]
+    },
+    "applications": {
+      "web_server": [ "Nginx", "Apache" ],
+      "database": [ "PostgreSQL", "Oracle Database" ],
+      "crm_erp": [ "SAP" ],
+      "collaboration": [ "Microsoft 365", "Confluence" ],
+      "messaging": [ "Exchange Online" ],
+      "data_storage": "hybrid"
+    },
+    "data": {
+      "database": [ "PostgreSQL", "Oracle Database" ],
+      "storage": [ "Amazon S3", "Research NAS", "Archive SAN" ]
+    },
+    "devsecops": {
+      "ci_cd": [ "GitHub Actions", "Jenkins" ],
+      "artifact_repo": [ "Nexus Repository" ],
+      "container": [ "Docker", "Kubernetes" ]
+    },
+    "security_operations": {
+      "siem_platform": [ "Splunk" ],
+      "soar_platform": [ "Splunk SOAR" ],
+      "ticketing_system": [ "ServiceNow" ],
+      "vuln_scanner": [ "Tenable Nessus" ],
+      "threat_intel_platform": [ "MISP" ],
+      "soc_model": "in-house",
+      "soc_size": 22
+    }
+  },
+  "sbom_reference": {
+    "maintained": true,
+    "formats": [ "cyclonedx", "spdx" ],
+    "generation_tools": [ "Syft", "Trivy" ]
+  },
+  "cpe_list": [
+    "cpe:2.3:o:microsoft:windows_11:*:*:*:*:*:*:*:*",
+    "cpe:2.3:o:redhat:enterprise_linux:9:*:*:*:*:*:*:*",
+    "cpe:2.3:o:microsoft:windows_server_2022:*:*:*:*:*:*:*:*",
+    "cpe:2.3:a:amazon:elastic_kubernetes_service:*:*:*:*:*:*:*:*",
+    "cpe:2.3:a:vmware:vsphere:8.*:*:*:*:*:*:*:*"
+  ],
+  "threat_actor_watch_list": [ "APT29", "APT41", "FIN12" ],
+  "os_inventory": [
+    {
+      "asset_group": "Research Workstations",
+      "hostname_pattern": "vb-rsch-*",
+      "environment": "production",
+      "criticality": "high",
+      "name": "RHEL",
+      "version": "9"
+    },
+    {
+      "asset_group": "Clinical Systems",
+      "hostname_pattern": "vb-clin-*",
+      "environment": "production",
+      "criticality": "high",
+      "name": "Windows Server",
+      "version": "2022"
+    },
+    {
+      "asset_group": "General Endpoints",
+      "hostname_pattern": "vb-wks-*",
+      "environment": "production",
+      "criticality": "medium",
+      "name": "Windows 11",
+      "version": "23H2"
+    }
+  ],
+  "sbom_sources": [
+    {
+      "type": "github",
+      "owner": "vanguard-biopharma",
+      "repo": "bioinformatics-platform",
+      "ref": "main",
+      "token_env": "SBOM_TOKEN_VANGUARD_GITHUB"
+    },
+    {
+      "type": "gitlab",
+      "host": "https://gitlab.example.com",
+      "project_id": "vanguard/clinical-services",
+      "token_env": "SBOM_TOKEN_VANGUARD_GITLAB"
+    },
+    {
+      "type": "url",
+      "url": "https://sbom.vanguard.test/export/latest.json",
+      "token_env": "SBOM_TOKEN_VANGUARD_INTERNAL"
+    }
+  ]
+}

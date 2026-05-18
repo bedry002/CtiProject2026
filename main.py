@@ -28,7 +28,7 @@ from config import (
 REPORT_PATH = pathlib.Path(__file__).parent / "reports" / "curation_report.html"
 
 # Set to False once the tags are correct
-TAGGER_DRY_RUN = False
+TAGGER_DRY_RUN = True
 
 
 def build_pipeline(misp_client: PyMISP, event_count: int) -> Pipeline:
@@ -65,7 +65,7 @@ def main() -> None:
     for event in sorted(relevant, key=lambda e: e.confidence or 0.0, reverse=True):
         print(
             f"  [{event.confidence:.4f}] Event {event.misp_id} | "
-            f"matched={event.matched_profile_terms}"
+            f"matched={event.matched_sbom_components}"
         )
     print(f"\nReport: {REPORT_PATH}")
 

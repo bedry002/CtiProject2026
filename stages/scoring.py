@@ -16,14 +16,15 @@ class BusinessProfile:
     sectors: list[str]
     technologies: list[str]
     geographies: list[str]
-    keywords: list[str]
+    keywords: list[str]                              # generic threat keywords
+    specific_keywords: list[str] = field(default_factory=list)  # SBOM-derived compound phrases
 
 
 @dataclass
 class ScoringWeights:
-    sbom:       float = 0.25  # SBOM component hits — most precise signal
-    keyword:    float = 0.25  # threat-type keywords
-    ioc:        float = 0.20  # IOC type analysis
+    sbom:       float = 0.35  # SBOM component hits — most precise signal
+    keyword:    float = 0.25  # SBOM-derived compound phrase matches
+    ioc:        float = 0.10  # IOC type analysis (profile-blind — kept low)
     topic:      float = 0.20  # topic cluster relevance (from TOPIC_RELEVANCE_MAP)
     technology: float = 0.07  # general tech terms
     context:    float = 0.03  # sector + geography
@@ -102,6 +103,39 @@ def _sbom_score(sbom: SBOMProfile, haystack: str) -> tuple[float, list[str]]:
     return round(score, 4), matched_refs
 
 
+def _cve_sbom_score(
+    sbom: SBOMProfile, event_cves: set[str]
+) -> tuple[float, list[str]]:
+    """
+    Cross-reference event CVEs against SBOM risk entries.
+
+    Each risk entry carries a known_cves list.  When an event CVE matches,
+    the affected component weights are added to the matched pool — using the
+    same weight/total_weight formula as the text-based SBOM score so the two
+    signals are directly comparable and can be cleanly combined.
+
+    Returns (score, matched_component_refs).
+    """
+    if not event_cves or not sbom.risks or sbom.total_weight == 0:
+        return 0.0, []
+
+    comp_weights = {c.bom_ref: c.weight for c in sbom.components}
+    matched_refs: list[str] = []
+    matched_weight = 0.0
+
+    for risk in sbom.risks:
+        if not risk.known_cves:
+            continue
+        if event_cves & {c.upper() for c in risk.known_cves}:
+            for ref in risk.affected_refs:
+                if ref not in matched_refs:
+                    matched_refs.append(ref)
+                    matched_weight += comp_weights.get(ref, 0.0)
+
+    score = round(min(1.0, matched_weight / sbom.total_weight), 4)
+    return score, matched_refs
+
+
 def _ioc_score(raw: dict) -> tuple[float, dict[str, int]]:
     """
     Score based on IOC attribute type distribution.
@@ -158,10 +192,54 @@ class ScoringStage(Stage):
         hay = _haystack(event)
         w   = self._weights
 
-        sbom_s,  sbom_refs  = _sbom_score(self._sbom, hay)
-        kw_s,    kw_matched = _category_score(
-            [t.lower() for t in self._profile.keywords], hay, saturation=0.25
-        )
+        sbom_s, sbom_refs = _sbom_score(self._sbom, hay)
+
+        # CVE cross-reference: union any components whose known CVEs appear in the event
+        event_cves = {
+            item["text"].upper()
+            for item in event.entities.get("cves", [])
+            if isinstance(item, dict) and "text" in item
+        }
+        cve_s, cve_refs = _cve_sbom_score(self._sbom, event_cves)
+        if cve_refs:
+            # Recompute from the union of text-matched and CVE-matched components
+            # so both signals share the same weight/total_weight formula.
+            all_refs = list(dict.fromkeys(sbom_refs + cve_refs))
+            matched_weight = sum(
+                c.weight for c in self._sbom.components if c.bom_ref in set(all_refs)
+            )
+            sbom_s = round(
+                min(1.0, matched_weight / self._sbom.total_weight), 4
+            ) if self._sbom.total_weight > 0 else 0.0
+            sbom_refs = all_refs
+
+        # NER sbom_assets boost — confirmed entity matches raise sbom score.
+        # bom_ref may be a comma-joined string when a shared term maps to multiple
+        # components (e.g. "windows" -> "pos-windows11, server-windows2022").
+        # Split here so dict.fromkeys can deduplicate properly against sbom_refs.
+        ner_sbom_hits = []
+        for item in event.entities.get("sbom_assets", []):
+            if isinstance(item, dict) and "bom_ref" in item:
+                for ref in item["bom_ref"].split(","):
+                    ref = ref.strip()
+                    if ref:
+                        ner_sbom_hits.append(ref)
+        if ner_sbom_hits:
+            ner_boost = min(0.2, len(set(ner_sbom_hits)) * 0.07)
+            sbom_s = round(min(1.0, sbom_s + ner_boost), 4)
+            sbom_refs = list(dict.fromkeys(sbom_refs + ner_sbom_hits))
+
+        # Keyword scoring — SBOM-derived compound phrases only.
+        # Phrases like "esxi ransomware", "pos malware windows", "nginx exploit"
+        # are far more discriminating than single generic terms.
+        # Saturation: ~3 exact compound phrase matches → score 1.0.
+        if self._profile.specific_keywords:
+            kw_s, kw_matched = _category_score(
+                [t.lower() for t in self._profile.specific_keywords], hay, saturation=0.006
+            )
+        else:
+            kw_s, kw_matched = 0.0, []
+
         tech_s,  tech_matched = _category_score(
             [t.lower() for t in self._profile.technologies], hay, saturation=0.30
         )
@@ -189,12 +267,13 @@ class ScoringStage(Stage):
         event.matched_profile_terms   = kw_matched + tech_matched + ctx_matched
         event.ioc_summary             = ioc_counts
         event.score_breakdown         = {
-            "sbom":    round(sbom_s,  4),
-            "keyword": round(kw_s,    4),
-            "ioc":     round(ioc_s,   4),
-            "topic":   round(topic_s, 4),
-            "tech":    round(tech_s,  4),
-            "context": round(ctx_s,   4),
+            "sbom":        round(sbom_s,  4),
+            "sbom_cve":    round(cve_s,   4),  # CVE→component cross-reference contribution
+            "keyword":     round(kw_s,    4),
+            "ioc":         round(ioc_s,   4),
+            "topic":       round(topic_s, 4),
+            "tech":        round(tech_s,  4),
+            "context":     round(ctx_s,   4),
         }
 
         logger.debug(

@@ -50,12 +50,14 @@ _org_technologies: set[str] = set()
 _org_sectors: set[str] = set()
 _org_geographies: set[str] = set()
 _org_cpe_products: set[str] = set()
+# term.lower() → bom_ref — enables confirmed SBOM asset tagging in NER output
+_org_sbom_term_map: dict[str, str] = {}
 _org_asset_lock = threading.Lock()
 _known_actors_lock = threading.Lock()
 
 
 def _load_organization_assets() -> None:
-    global _org_software_terms, _org_technologies, _org_sectors, _org_geographies, _org_cpe_products
+    global _org_software_terms, _org_technologies, _org_sectors, _org_geographies, _org_cpe_products, _org_sbom_term_map
 
     with _org_asset_lock:
         # Load SBOM components
@@ -65,12 +67,27 @@ def _load_organization_assets() -> None:
                 from pipeline.sbom import load_sbom
                 sbom = load_sbom(sbom_path)
 
-                # Extract all match terms from SBOM components
+                # Extract all match terms from SBOM components.
+                # When multiple components share a term (e.g. "windows" → pos-windows11
+                # and server-windows2022), store all refs so the entity display is accurate.
+                # The text-based _sbom_score in scoring.py checks all components independently,
+                # so scoring is unaffected; this only improves NER entity attribution.
+                _multi_ref_map: dict[str, list[str]] = {}
                 for component in sbom.components:
                     for term in component.match_terms():
-                        _org_software_terms.add(term.lower())
+                        t = term.lower()
+                        if len(t) >= 4:
+                            _org_software_terms.add(t)
+                            _multi_ref_map.setdefault(t, [])
+                            if component.bom_ref not in _multi_ref_map[t]:
+                                _multi_ref_map[t].append(component.bom_ref)
 
-                logger.info("sbom_loaded components=%d unique_terms=%d", 
+                # For the entity map, join multiple refs so the display shows all matches.
+                # Single-ref terms store the ref directly; multi-ref terms store a comma list.
+                for t, refs in _multi_ref_map.items():
+                    _org_sbom_term_map[t] = refs[0] if len(refs) == 1 else ", ".join(refs)
+
+                logger.info("sbom_loaded components=%d unique_terms=%d",
                            len(sbom.components), len(_org_software_terms))
             except Exception as exc:
                 logger.error("sbom_load_failed: %s", exc)
@@ -86,37 +103,49 @@ def _load_organization_assets() -> None:
                 for func in org.get("critical_business_functions", []):
                     _org_sectors.add(func.lower())
 
-                # Extract geographies
+                # Extract geographies from headquarters only.
+                # Jurisdiction codes (e.g. "US", "CA") are intentionally excluded —
+                # they are 2-letter strings that produce substring false positives
+                # in arbitrary threat intel text ("focus", "because", ".ca" domains).
                 hq = org.get("primary_headquarters", "")
                 for part in hq.split(","):
                     part = part.strip()
-                    if part:
+                    if len(part) >= 4:  # skip codes shorter than a city name
                         _org_geographies.add(part.lower())
-
-                for jurisdiction in org.get("jurisdiction", []):
-                    _org_geographies.add(jurisdiction.lower())
 
                 # Extract technology stack from profile
                 tech_stack = data.get("technology_stack", {})
 
                 def _extract_tech_list(obj):
-                    """Recursively extract technology names from nested structures."""
+                    """Recursively extract technology names from the tech stack.
+
+                    Applies a word-count heuristic to distinguish product names
+                    from prose values: strings with ≥5 words are policy sentences
+                    ("Monthly cadence with emergency out-of-band patching…") and
+                    are skipped. Strings with ≤4 words are product/service names
+                    ("Windows Server 2022", "Microsoft Defender for Endpoint").
+                    This makes the extraction automatic for any compliant profile
+                    JSON without requiring a manually maintained key allowlist.
+                    """
+                    _SKIP_VALUES = {"n/a", "none", "true", "false", "hybrid",
+                                    "basic", "intermediate", "advanced", "co-managed",
+                                    "in-house", "on-prem", "public", "private"}
                     if isinstance(obj, dict):
                         for value in obj.values():
                             _extract_tech_list(value)
                     elif isinstance(obj, list):
                         for item in obj:
-                            if isinstance(item, str) and item.strip() and item not in ["N/A", "None", "none", ""]:
-                                for tech in item.split(","):
-                                    tech = tech.strip().lower()
-                                    if tech and len(tech) > 2:
-                                        _org_technologies.add(tech)
-                            else:
-                                _extract_tech_list(item)
-                    elif isinstance(obj, str) and obj.strip() and obj not in ["N/A", "None", "none", ""]:
-                        tech = obj.strip().lower()
-                        if tech and len(tech) > 2:
-                            _org_technologies.add(tech)
+                            _extract_tech_list(item)
+                    elif isinstance(obj, str):
+                        s = obj.strip()
+                        s_lower = s.lower()
+                        word_count = len(s.split())
+                        if (s
+                                and len(s) > 2
+                                and word_count <= 4
+                                and s_lower not in _SKIP_VALUES
+                                and not s[0].isdigit()):
+                            _org_technologies.add(s_lower)
 
                 _extract_tech_list(tech_stack)
 
@@ -364,7 +393,7 @@ class NERStage(Stage):
         entities: dict = {
             "cves": [], "ttps": [], "iocs": [],
             "threat_actors": [], "sectors": [], "software": [],
-            "geographies": [], "malware": []
+            "geographies": [], "malware": [], "sbom_assets": [],
         }
         seen: set = set()
 
@@ -418,9 +447,22 @@ class NERStage(Stage):
         # Organization-specific software and technologies
         text_lower = text.lower()
 
-        # Check for SBOM components and technologies
-        all_org_terms = self._org_software | self._org_technologies | self._org_cpe_products
-        for term in all_org_terms:
+        # SBOM-confirmed asset mentions — highest confidence, separate bucket
+        # so scoring can weight them independently of generic software mentions.
+        for term, bom_ref in _org_sbom_term_map.items():
+            if term in text_lower and term not in seen:
+                seen.add(term)
+                idx = text_lower.index(term)
+                boost = _context_boost(text, idx, idx + len(term))
+                _append_unique(
+                    entities,
+                    "sbom_assets",
+                    {"text": term, "bom_ref": bom_ref, "confidence": min(0.97, 0.90 + boost)},
+                )
+
+        # Remaining org technology terms not already captured as SBOM assets
+        remaining_terms = (self._org_technologies | self._org_cpe_products) - _org_sbom_term_map.keys()
+        for term in remaining_terms:
             if term in text_lower and term not in seen:
                 seen.add(term)
                 idx = text_lower.index(term)
@@ -435,9 +477,10 @@ class NERStage(Stage):
                 seen.add(sector)
                 entities["sectors"].append({"text": sector, "confidence": 0.9})
 
-        # Organization geographies
+        # Organization geographies — word-boundary match to avoid substring noise
+        # e.g. "illinois" should not match inside "illinoisville"; "chicago" is fine
         for geo in self._org_geographies:
-            if geo in text_lower and geo not in seen:
+            if re.search(r"\b" + re.escape(geo) + r"\b", text_lower) and geo not in seen:
                 seen.add(geo)
                 entities["geographies"].append({"text": geo, "confidence": 0.9})
 
@@ -483,16 +526,12 @@ class NERStage(Stage):
         return False
 
     def _is_org_geography_strict(self, value_lower: str) -> bool:
-        #Strict geography matching.
-        # Exact match
+        """Strict geography matching — exact or contained, minimum 4 chars."""
         if value_lower in self._org_geographies:
             return True
-
-        # Only if detected entity contains our geography
         for geo in self._org_geographies:
-            if len(geo) > 2 and geo in value_lower:
+            if len(geo) >= 4 and geo in value_lower:
                 return True
-
         return False
 
     def _extract_relevant_chunks(self, text: str, context_window: int = 200) -> list[str]:

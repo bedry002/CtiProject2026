@@ -92,9 +92,13 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
         conf = e.confidence or 0
         label, fg, bg = _band(conf)
         bd = e.score_breakdown
+        cve_badge = (
+            ' <span title="CVE→component match" style="color:#0d6efd">&#x2731;</span>'
+            if bd.get("sbom_cve", 0) > 0 else ""
+        )
         breakdown_html = (
-            f'<span title="SBOM">S:{bd.get("sbom",0):.2f}</span> '
-            f'<span title="Keyword">K:{bd.get("keyword",0):.2f}</span> '
+            f'<span title="SBOM text match (sbom_cve={bd.get("sbom_cve",0):.2f})">S:{bd.get("sbom",0):.2f}{cve_badge}</span> '
+            f'<span title="Keyword phrases">K:{bd.get("keyword",0):.2f}</span> '
             f'<span title="IOC analysis">I:{bd.get("ioc",0):.2f}</span> '
             f'<span title="Topic relevance">TR:{bd.get("topic",0):.2f}</span> '
             f'<span title="Technology">T:{bd.get("tech",0):.2f}</span> '

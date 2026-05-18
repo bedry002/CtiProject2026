@@ -1,0 +1,176 @@
+{
+  "profile_id": "uuid-v4-vanguard-biopharma-2026-005",
+  "profile_version": "1.0",
+  "created": "2026-05-18T00:00:00Z",
+  "modified": "2026-05-18T00:00:00Z",
+  "organisation": {
+    "name": "Vanguard BioPharma",
+    "naics_code": "3254",
+    "naics_label": "Pharmaceutical and Medicine Manufacturing",
+    "isic_code": "2100",
+    "size": "large",
+    "jurisdiction": [ "US", "CH" ],
+    "primary_headquarters": "Boston, Massachusetts, United States",
+    "business_units": [ "Research", "Clinical Operations", "Quality Assurance", "Manufacturing IT", "Regulatory Affairs" ],
+    "critical_business_functions": [
+      "Drug discovery and molecular modeling",
+      "Clinical trial data processing",
+      "Laboratory information management",
+      "Regulatory submission and quality reporting"
+    ],
+    "critical_processes": [
+      "Sample data ingestion",
+      "Laboratory workflow execution",
+      "Electronic signature approval",
+      "Regulatory evidence packaging"
+    ],
+    "regulatory_frameworks": [ "GxP", "HIPAA-aligned controls", "ISO 27001", "21 CFR Part 11" ]
+  },
+  "risk_profile": {
+    "severity_threshold": "high",
+    "maturity_level": "managed",
+    "risk_tolerance": "low",
+    "alert_volume": "medium",
+    "priority_asset_classes": [
+      "Laboratory research compute nodes",
+      "Clinical trial data repositories",
+      "LIMS and electronic signature systems"
+    ],
+    "regulatory_flags": [ "health_data", "research_ip" ],
+    "recent_incidents": [],
+    "threats": [ "ip_theft", "ransomware", "credential_attacks" ]
+  },
+  "technology_stack": {
+    "endpoint": {
+      "os_workstation": [ "Windows 11 Enterprise 24H2", "RHEL 9.4" ],
+      "os_server": [ "RHEL 9.3", "Windows Server 2022" ],
+      "edr_solution": [ "CrowdStrike Falcon Sensor 7.20" ],
+      "mdm": [ "Microsoft Intune 2405" ],
+      "device_management": "Intune for corporate endpoints and dedicated lab endpoint controls",
+      "patch_management": "Validated patch windows aligned to lab scheduling and change control"
+    },
+    "virtualisation": {
+      "hypervisor": "VMware vSphere 8.0 U3",
+      "hypervisor_type": "Type-1",
+      "host_os": "VMware ESXi 8.0 U2",
+      "guest_os": "RHEL and Windows mixed research workloads",
+      "network_mode": "Isolated research network zones with controlled egress",
+      "snapshot_policy": "Versioned snapshots before model and analysis pipeline updates"
+    },
+    "identity": {
+      "directory_service": [ "Okta Identity Cloud 2026.1", "Active Directory 2022" ],
+      "mfa_solution": [ "Okta Verify 9.28" ],
+      "sso": [ "SAML 2.0", "OIDC 1.0" ],
+      "pam_solution": [ "BeyondTrust Password Safe 25.1" ],
+      "identity_federation": "SAML/OIDC federation for lab and compliance SaaS",
+      "password_policy": "Minimum 15 characters with strict privileged account controls",
+      "passwordless_auth": false
+    },
+    "network": {
+      "firewall_vendor": [ "Palo Alto Networks PAN-OS 11.1", "ArubaOS-CX 10.13" ],
+      "vpn_solution": [ "GlobalProtect 6.2" ],
+      "proxy": [ "Secure research web gateway 5.4" ],
+      "network_monitoring": [ "Zeek 6.2", "NetFlow v9 telemetry" ],
+      "dns_security": "Filtered DNS with malware and command-and-control domain blocking",
+      "network_segmentation": "advanced"
+    },
+    "cloud": {
+      "cloud_platform": [ "AWS" ],
+      "cloud_native": true,
+      "container_platform": [ "Amazon EKS 1.30" ],
+      "cloud_security_tools": [ "AWS GuardDuty", "AWS Security Hub" ]
+    },
+    "applications": {
+      "web_server": [ "Nginx 1.26", "Apache 2.4.58" ],
+      "database": [ "PostgreSQL 16", "Oracle Database 19c" ],
+      "crm_erp": [ "SAP S/4HANA 2023" ],
+      "collaboration": [ "Microsoft 365 E5 (2026.04)", "Confluence 8.9" ],
+      "messaging": [ "Exchange Online (2026.04)" ],
+      "data_storage": "hybrid"
+    },
+    "data": {
+      "database": [ "PostgreSQL 16", "Oracle Database 19c" ],
+      "storage": [ "Amazon S3", "Research NAS (ONTAP 9.13)", "Archive SAN (PowerStoreOS 3.6)" ]
+    },
+    "devsecops": {
+      "ci_cd": [ "GitHub Actions", "Jenkins 2.452" ],
+      "artifact_repo": [ "Nexus Repository 3.68" ],
+      "container": [ "Docker 27.0", "Kubernetes 1.29" ]
+    },
+    "security_operations": {
+      "siem_platform": [ "Splunk Enterprise 9.2" ],
+      "soar_platform": [ "Splunk SOAR 6.3" ],
+      "ticketing_system": [ "ServiceNow Washington DC" ],
+      "vuln_scanner": [ "Tenable Nessus 10.8" ],
+      "threat_intel_platform": [ "MISP 2.4.194" ],
+      "soc_model": "in-house",
+      "soc_size": 22
+    },
+    "hardware": {
+      "research_workstations": [ "Dell Precision 7865 (BIOS 2.8.0)", "HP Z8 G5 (BIOS 01.11.02)" ],
+      "clinical_servers": [ "HPE ProLiant DL380 Gen11 (iLO 6 1.61)", "Dell PowerEdge R760 (iDRAC 9 7.10.30)" ],
+      "virtualization_hosts": [ "VMware vSAN ReadyNode S2600WFTR (firmware bundle 2025.3)" ],
+      "network_hardware": [ "Palo Alto PA-3410 (PAN-OS 11.1)", "Aruba CX 8325 (AOS-CX 10.13)" ],
+      "storage_hardware": [ "NetApp AFF A400 (ONTAP 9.13)", "Dell PowerStore 9200T (PowerStoreOS 3.6)" ]
+    }
+  }
+  "sbom_reference": {
+    "maintained": true,
+    "formats": [ "cyclonedx", "spdx" ],
+    "generation_tools": [ "Syft", "Trivy" ]
+  },
+  "cpe_list": [
+    "cpe:2.3:o:microsoft:windows_11:*:*:*:*:*:*:*:*",
+    "cpe:2.3:o:redhat:enterprise_linux:9:*:*:*:*:*:*:*",
+    "cpe:2.3:o:microsoft:windows_server_2022:*:*:*:*:*:*:*:*",
+    "cpe:2.3:a:amazon:elastic_kubernetes_service:*:*:*:*:*:*:*:*",
+    "cpe:2.3:a:vmware:vsphere:8.*:*:*:*:*:*:*:*"
+  ],
+  "threat_actor_watch_list": [ "APT29", "APT41", "FIN12" ],
+  "os_inventory": [
+    {
+      "asset_group": "Research Workstations",
+      "hostname_pattern": "vb-rsch-*",
+      "environment": "production",
+      "criticality": "high",
+      "name": "RHEL",
+      "version": "9"
+    },
+    {
+      "asset_group": "Clinical Systems",
+      "hostname_pattern": "vb-clin-*",
+      "environment": "production",
+      "criticality": "high",
+      "name": "Windows Server",
+      "version": "2022"
+    },
+    {
+      "asset_group": "General Endpoints",
+      "hostname_pattern": "vb-wks-*",
+      "environment": "production",
+      "criticality": "medium",
+      "name": "Windows 11",
+      "version": "23H2"
+    }
+  ],
+  "sbom_sources": [
+    {
+      "type": "github",
+      "owner": "vanguard-biopharma",
+      "repo": "bioinformatics-platform",
+      "ref": "main",
+      "token_env": "SBOM_TOKEN_VANGUARD_GITHUB"
+    },
+    {
+      "type": "gitlab",
+      "host": "https://gitlab.example.com",
+      "project_id": "vanguard/clinical-services",
+      "token_env": "SBOM_TOKEN_VANGUARD_GITLAB"
+    },
+    {
+      "type": "url",
+      "url": "https://sbom.vanguard.test/export/latest.json",
+      "token_env": "SBOM_TOKEN_VANGUARD_INTERNAL"
+    }
+  ]
+}

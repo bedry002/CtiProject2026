@@ -42,71 +42,78 @@
   },
   "technology_stack": {
     "endpoint": {
-      "os_workstation": [ "Windows 11 Enterprise", "RHEL 9" ],
-      "os_server": [ "RHEL 9", "Windows Server 2022" ],
-      "edr_solution": [ "CrowdStrike Falcon" ],
-      "mdm": [ "Microsoft Intune" ],
+      "os_workstation": [ "Windows 11 Enterprise 24H2", "RHEL 9.4" ],
+      "os_server": [ "RHEL 9.3", "Windows Server 2022" ],
+      "edr_solution": [ "CrowdStrike Falcon Sensor 7.20" ],
+      "mdm": [ "Microsoft Intune 2405" ],
       "device_management": "Intune for corporate endpoints and dedicated lab endpoint controls",
       "patch_management": "Validated patch windows aligned to lab scheduling and change control"
     },
     "virtualisation": {
-      "hypervisor": "VMware vSphere 8",
+      "hypervisor": "VMware vSphere 8.0 U3",
       "hypervisor_type": "Type-1",
-      "host_os": "VMware ESXi",
+      "host_os": "VMware ESXi 8.0 U2",
       "guest_os": "RHEL and Windows mixed research workloads",
       "network_mode": "Isolated research network zones with controlled egress",
       "snapshot_policy": "Versioned snapshots before model and analysis pipeline updates"
     },
     "identity": {
-      "directory_service": [ "Okta", "Active Directory" ],
-      "mfa_solution": [ "Okta Verify" ],
-      "sso": [ "SAML", "OIDC" ],
-      "pam_solution": [ "BeyondTrust" ],
+      "directory_service": [ "Okta Identity Cloud 2026.1", "Active Directory 2022" ],
+      "mfa_solution": [ "Okta Verify 9.28" ],
+      "sso": [ "SAML 2.0", "OIDC 1.0" ],
+      "pam_solution": [ "BeyondTrust Password Safe 25.1" ],
       "identity_federation": "SAML/OIDC federation for lab and compliance SaaS",
       "password_policy": "Minimum 15 characters with strict privileged account controls",
       "passwordless_auth": false
     },
     "network": {
-      "firewall_vendor": [ "Palo Alto Networks", "Aruba" ],
-      "vpn_solution": [ "GlobalProtect" ],
-      "proxy": [ "Secure research web gateway" ],
-      "network_monitoring": [ "Zeek", "NetFlow telemetry" ],
+      "firewall_vendor": [ "Palo Alto Networks PAN-OS 11.1", "ArubaOS-CX 10.13" ],
+      "vpn_solution": [ "GlobalProtect 6.2" ],
+      "proxy": [ "Secure research web gateway 5.4" ],
+      "network_monitoring": [ "Zeek 6.2", "NetFlow v9 telemetry" ],
       "dns_security": "Filtered DNS with malware and command-and-control domain blocking",
       "network_segmentation": "advanced"
     },
     "cloud": {
       "cloud_platform": [ "AWS" ],
       "cloud_native": true,
-      "container_platform": [ "Amazon EKS" ],
+      "container_platform": [ "Amazon EKS 1.30" ],
       "cloud_security_tools": [ "AWS GuardDuty", "AWS Security Hub" ]
     },
     "applications": {
-      "web_server": [ "Nginx", "Apache" ],
-      "database": [ "PostgreSQL", "Oracle Database" ],
-      "crm_erp": [ "SAP" ],
-      "collaboration": [ "Microsoft 365", "Confluence" ],
-      "messaging": [ "Exchange Online" ],
+      "web_server": [ "Nginx 1.26", "Apache 2.4.58" ],
+      "database": [ "PostgreSQL 16", "Oracle Database 19c" ],
+      "crm_erp": [ "SAP S/4HANA 2023" ],
+      "collaboration": [ "Microsoft 365 E5 (2026.04)", "Confluence 8.9" ],
+      "messaging": [ "Exchange Online (2026.04)" ],
       "data_storage": "hybrid"
     },
     "data": {
-      "database": [ "PostgreSQL", "Oracle Database" ],
-      "storage": [ "Amazon S3", "Research NAS", "Archive SAN" ]
+      "database": [ "PostgreSQL 16", "Oracle Database 19c" ],
+      "storage": [ "Amazon S3", "Research NAS (ONTAP 9.13)", "Archive SAN (PowerStoreOS 3.6)" ]
     },
     "devsecops": {
-      "ci_cd": [ "GitHub Actions", "Jenkins" ],
-      "artifact_repo": [ "Nexus Repository" ],
-      "container": [ "Docker", "Kubernetes" ]
+      "ci_cd": [ "GitHub Actions", "Jenkins 2.452" ],
+      "artifact_repo": [ "Nexus Repository 3.68" ],
+      "container": [ "Docker 27.0", "Kubernetes 1.29" ]
     },
     "security_operations": {
-      "siem_platform": [ "Splunk" ],
-      "soar_platform": [ "Splunk SOAR" ],
-      "ticketing_system": [ "ServiceNow" ],
-      "vuln_scanner": [ "Tenable Nessus" ],
-      "threat_intel_platform": [ "MISP" ],
+      "siem_platform": [ "Splunk Enterprise 9.2" ],
+      "soar_platform": [ "Splunk SOAR 6.3" ],
+      "ticketing_system": [ "ServiceNow Washington DC" ],
+      "vuln_scanner": [ "Tenable Nessus 10.8" ],
+      "threat_intel_platform": [ "MISP 2.4.194" ],
       "soc_model": "in-house",
       "soc_size": 22
+    },
+    "hardware": {
+      "research_workstations": [ "Dell Precision 7865 (BIOS 2.8.0)", "HP Z8 G5 (BIOS 01.11.02)" ],
+      "clinical_servers": [ "HPE ProLiant DL380 Gen11 (iLO 6 1.61)", "Dell PowerEdge R760 (iDRAC 9 7.10.30)" ],
+      "virtualization_hosts": [ "VMware vSAN ReadyNode S2600WFTR (firmware bundle 2025.3)" ],
+      "network_hardware": [ "Palo Alto PA-3410 (PAN-OS 11.1)", "Aruba CX 8325 (AOS-CX 10.13)" ],
+      "storage_hardware": [ "NetApp AFF A400 (ONTAP 9.13)", "Dell PowerStore 9200T (PowerStoreOS 3.6)" ]
     }
-  },
+  }
   "sbom_reference": {
     "maintained": true,
     "formats": [ "cyclonedx", "spdx" ],

@@ -34,14 +34,8 @@ _SPACY_FALLBACK_MODELS = ["en_core_web_lg", "en_core_web_md", "en_core_web_sm"]
 
 CVE_PATTERN = re.compile(r"CVE-\d{4}-\d{4,7}", re.IGNORECASE)
 TTP_PATTERN = re.compile(r"T\d{4}(?:\.\d{3})?")
-IOC_IP = re.compile(
-    r"\b(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}"
-    r"(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\b"
-)
-IOC_DOMAIN = re.compile(
-    r"\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\b",
-    re.IGNORECASE,
-)
+IOC_IP = re.compile(r"\b(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}" r"(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\b")
+IOC_DOMAIN = re.compile(r"\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\b",re.IGNORECASE,)
 IOC_HASH_MD5 = re.compile(r"\b[a-fA-F0-9]{32}\b")
 IOC_HASH_SHA1 = re.compile(r"\b[a-fA-F0-9]{40}\b")
 IOC_HASH_SHA256 = re.compile(r"\b[a-fA-F0-9]{64}\b")
@@ -243,9 +237,12 @@ def _first_term_span(text: str, term: str) -> tuple[int, int] | None:
     text_lower = text.lower()
     term_lower = term.lower()
     if re.search(r"[a-z0-9]", term_lower, re.IGNORECASE):
+        # Word-character terms require word-boundary match; never fall through to
+        # substring search or "active" would match inside "proactive".
         match = re.search(r"\b" + re.escape(term_lower) + r"\b", text_lower)
         if match:
             return match.start(), match.end()
+        return None
     idx = text_lower.find(term_lower)
     if idx == -1:
         return None
@@ -547,8 +544,6 @@ class NERStage(Stage):
                 seen_terms.add(sector)
                 entities["sectors"].append({"text": sector, "confidence": 0.9})
 
-        # Organization geographies — word-boundary match to avoid substring noise
-        # e.g. "illinois" should not match inside "illinoisville"; "chicago" is fine
         for geo in self._org_geographies:
             if geo not in seen_terms and re.search(r"\b" + re.escape(geo) + r"\b", text_lower):
                 seen_terms.add(geo)

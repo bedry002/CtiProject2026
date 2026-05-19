@@ -113,7 +113,7 @@
       "network_hardware": [ "Palo Alto PA-3410 (PAN-OS 11.1)", "Aruba CX 8325 (AOS-CX 10.13)" ],
       "storage_hardware": [ "NetApp AFF A400 (ONTAP 9.13)", "Dell PowerStore 9200T (PowerStoreOS 3.6)" ]
     }
-  }
+  },
   "sbom_reference": {
     "maintained": true,
     "formats": [ "cyclonedx", "spdx" ],

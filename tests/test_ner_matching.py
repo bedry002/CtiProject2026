@@ -15,6 +15,7 @@ class TestNerMatching(unittest.TestCase):
         self.stage._org_sectors = {"retail"}
         self.stage._org_geographies = set()
         self.stage._org_cpe_products = set()
+        self.stage._org_threat_actors = {"apt29"}
         self.stage._org_sbom_term_map = {}
 
     def test_term_boundary_prevents_substring_false_positive(self) -> None:
@@ -34,6 +35,10 @@ class TestNerMatching(unittest.TestCase):
         self.assertIsInstance(chunk_text, str)
         self.assertIsInstance(chunk_start, int)
         self.assertGreaterEqual(chunk_start, 0)
+
+    def test_threat_actor_watchlist_match(self) -> None:
+        entities = self.stage._regex_entities("Campaign linked to APT29 activity")
+        self.assertTrue(any(item.get("text") == "apt29" for item in entities.get("threat_actors", [])))
 
 
 if __name__ == "__main__":

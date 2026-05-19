@@ -25,6 +25,17 @@ class TestNerRegexExtraction(unittest.TestCase):
         self.assertTrue(any(ioc.get("type") == "ipv4" and ioc.get("text") == "8.8.8.8" for ioc in iocs))
         self.assertTrue(any(ioc.get("type") == "domain" and ioc.get("text") == "control.example.museum" for ioc in iocs))
 
+    def test_doc_scoped_only_suppresses_generic_signals(self) -> None:
+        stage = NERStage(
+            spacy_auto_download=False,
+            profile_path="does-not-exist.json",
+            sbom_path="does-not-exist.json",
+            doc_scoped_only=True,
+        )
+        entities = stage._regex_entities("CVE-2024-12345 seen from 8.8.8.8 via control.example.museum")
+        self.assertEqual(entities.get("cves"), [])
+        self.assertEqual(entities.get("iocs"), [])
+
 
 if __name__ == "__main__":
     unittest.main()

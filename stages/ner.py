@@ -25,6 +25,7 @@ SBOM_PATH = os.environ.get("ORG_SBOM_PATH", "Assets/SBOM.json")
 MITRE_ACTOR_CACHE_PATH = os.environ.get("MITRE_ACTOR_CACHE_PATH", "data/mitre_actor_cache.json")
 SPACY_AUTO_DOWNLOAD = os.environ.get("SPACY_AUTO_DOWNLOAD", "true").strip().lower() == "true"
 SPACY_BOOTSTRAP_MODEL = os.environ.get("SPACY_BOOTSTRAP_MODEL", "en_core_web_lg")
+NER_DOC_SCOPED_ONLY = os.environ.get("NER_DOC_SCOPED_ONLY", "false").strip().lower() == "true"
 
 _SPACY_FALLBACK_MODELS = ["en_core_web_lg", "en_core_web_md", "en_core_web_sm"]
 
@@ -57,6 +58,7 @@ class OrgAssets:
     sectors: frozenset[str]
     geographies: frozenset[str]
     cpe_products: frozenset[str]
+    threat_actors: frozenset[str]
     sbom_term_map: dict[str, str]
 
 
@@ -70,6 +72,7 @@ def _build_org_assets(profile_path: Path, sbom_path: Path) -> OrgAssets:
     sectors: set[str] = set()
     geographies: set[str] = set()
     cpe_products: set[str] = set()
+    threat_actors: set[str] = set()
     sbom_term_map: dict[str, str] = {}
 
     if sbom_path.exists():
@@ -99,6 +102,25 @@ def _build_org_assets(profile_path: Path, sbom_path: Path) -> OrgAssets:
             data = json.loads(profile_path.read_text(encoding="utf-8"))
             org = data.get("organisation", {})
 
+            skip_values = {
+                "n/a", "none", "true", "false", "hybrid", "basic", "intermediate",
+                "advanced", "co-managed", "in-house", "on-prem", "public", "private",
+                "production", "staging", "development", "internal_only", "partial",
+                "minimal", "significant",
+            }
+
+            def add_technical_term(value: str, max_words: int = 8) -> None:
+                s = value.strip()
+                s_lower = s.lower()
+                if (
+                    s
+                    and len(s) > 2
+                    and len(s.split()) <= max_words
+                    and s_lower not in skip_values
+                    and not s[0].isdigit()
+                ):
+                    technologies.add(s_lower)
+
             for func in org.get("critical_business_functions", []):
                 sectors.add(func.lower())
 
@@ -111,10 +133,6 @@ def _build_org_assets(profile_path: Path, sbom_path: Path) -> OrgAssets:
             tech_stack = data.get("technology_stack", {})
 
             def extract_tech_list(obj: object) -> None:
-                skip_values = {
-                    "n/a", "none", "true", "false", "hybrid", "basic", "intermediate",
-                    "advanced", "co-managed", "in-house", "on-prem", "public", "private",
-                }
                 if isinstance(obj, dict):
                     for value in obj.values():
                         extract_tech_list(value)
@@ -122,18 +140,36 @@ def _build_org_assets(profile_path: Path, sbom_path: Path) -> OrgAssets:
                     for item in obj:
                         extract_tech_list(item)
                 elif isinstance(obj, str):
-                    s = obj.strip()
-                    s_lower = s.lower()
-                    if (
-                        s
-                        and len(s) > 2
-                        and len(s.split()) <= 4
-                        and s_lower not in skip_values
-                        and not s[0].isdigit()
-                    ):
-                        technologies.add(s_lower)
+                    add_technical_term(obj, max_words=8)
 
             extract_tech_list(tech_stack)
+
+            # Pull additional technical vocabulary from profile sections that are
+            # outside technology_stack but still operationally relevant assets.
+            for item in data.get("risk_profile", {}).get("priority_asset_classes", []):
+                if isinstance(item, str):
+                    add_technical_term(item, max_words=10)
+
+            for item in data.get("asset_exposure", {}).get("critical_assets", []):
+                if isinstance(item, dict):
+                    name = item.get("name", "")
+                    if isinstance(name, str):
+                        add_technical_term(name, max_words=10)
+
+            for item in data.get("os_inventory", []):
+                if isinstance(item, dict):
+                    os_name = item.get("name", "")
+                    os_version = item.get("version", "")
+                    if isinstance(os_name, str):
+                        add_technical_term(os_name, max_words=6)
+                    if isinstance(os_name, str) and isinstance(os_version, str) and os_version:
+                        add_technical_term(f"{os_name} {os_version}", max_words=8)
+
+            for actor in data.get("threat_actor_watch_list", []):
+                if isinstance(actor, str):
+                    a = actor.strip().lower()
+                    if len(a) >= 3:
+                        threat_actors.add(a)
 
             for cpe in data.get("cpe_list", []):
                 parts = cpe.split(":")
@@ -143,8 +179,8 @@ def _build_org_assets(profile_path: Path, sbom_path: Path) -> OrgAssets:
                         cpe_products.add(product)
 
             logger.info(
-                "org_profile_loaded sectors=%d geographies=%d technologies=%d cpes=%d",
-                len(sectors), len(geographies), len(technologies), len(cpe_products),
+                "org_profile_loaded sectors=%d geographies=%d technologies=%d cpes=%d threat_actors=%d",
+                len(sectors), len(geographies), len(technologies), len(cpe_products), len(threat_actors),
             )
         except Exception as exc:
             logger.error("org_profile_load_failed: %s", exc)
@@ -155,6 +191,7 @@ def _build_org_assets(profile_path: Path, sbom_path: Path) -> OrgAssets:
         sectors=frozenset(sectors),
         geographies=frozenset(geographies),
         cpe_products=frozenset(cpe_products),
+        threat_actors=frozenset(threat_actors),
         sbom_term_map=sbom_term_map,
     )
 
@@ -256,11 +293,13 @@ class NERStage(Stage):
         spacy_bootstrap_model: str = "en_core_web_lg",
         profile_path: str | Path | None = None,
         sbom_path: str | Path | None = None,
+        doc_scoped_only: bool = NER_DOC_SCOPED_ONLY,
     ) -> None:
         self._auto_download = spacy_auto_download
         self._bootstrap_model = spacy_bootstrap_model
         self._profile_path = Path(profile_path) if profile_path else Path(PROFILE_PATH)
         self._sbom_path = Path(sbom_path) if sbom_path else Path(SBOM_PATH)
+        self._doc_scoped_only = doc_scoped_only
 
         self._nlp_instance = None
         self._nlp_unavailable_flag = False
@@ -273,6 +312,7 @@ class NERStage(Stage):
         self._org_sectors = set(assets.sectors)
         self._org_geographies = set(assets.geographies)
         self._org_cpe_products = set(assets.cpe_products)
+        self._org_threat_actors = set(assets.threat_actors)
         self._org_sbom_term_map = dict(assets.sbom_term_map)
 
     # public helpers
@@ -310,21 +350,29 @@ class NERStage(Stage):
                             original_start = chunk_start + ent.start_char
                             original_end = chunk_start + ent.end_char
 
-                            if label in ("ORG", "PRODUCT"):
-                                if self._is_org_software_strict(value_lower):
-                                    boost = _context_boost(text, original_start, original_end)
-                                    _append_unique(
-                                        entities,
-                                        "software",
-                                        {"text": value, "confidence": min(0.95, 0.85 + boost)},
-                                    )
-                            elif label == "GPE":
+                            if label in ("ORG", "PRODUCT") and self._is_org_software_strict(value_lower):
+                                boost = _context_boost(text, original_start, original_end)
+                                _append_unique(
+                                    entities,
+                                    "software",
+                                    {"text": value, "confidence": min(0.95, 0.85 + boost)},
+                                )
+
+                            if label == "GPE":
                                 if self._is_org_geography_strict(value_lower):
                                     boost = _context_boost(text, original_start, original_end)
                                     _append_unique(
                                         entities,
                                         "geographies",
                                         {"text": value, "confidence": min(0.95, 0.80 + boost)},
+                                    )
+
+                            if label in ("ORG", "PERSON", "NORP"):
+                                if self._is_org_threat_actor_strict(value_lower):
+                                    _append_unique(
+                                        entities,
+                                        "threat_actors",
+                                        {"text": value, "confidence": 0.9},
                                     )
                 else:
                     logger.debug("Event %s: No inventory terms found in text, skipping spaCy", 
@@ -334,6 +382,7 @@ class NERStage(Stage):
 
         entities.setdefault("malware", [])
         entities.setdefault("geographies", [])
+        entities.setdefault("threat_actors", [])
 
         entities["_raw_text"] = text
         event.entities = entities
@@ -407,52 +456,53 @@ class NERStage(Stage):
         }
         seen: set = set()
 
-        # CVEs - always relevant
-        for match in CVE_PATTERN.finditer(text):
-            value = match.group().upper()
-            if value not in seen:
-                seen.add(value)
-                entities["cves"].append({"text": value, "confidence": 1.0})
+        if not self._doc_scoped_only:
+            # CVEs
+            for match in CVE_PATTERN.finditer(text):
+                value = match.group().upper()
+                if value not in seen:
+                    seen.add(value)
+                    entities["cves"].append({"text": value, "confidence": 1.0})
 
-        # TTPs - always relevant
-        for match in TTP_PATTERN.finditer(text):
-            value = match.group().upper()
-            if value not in seen:
-                seen.add(value)
-                entities["ttps"].append({"text": value, "confidence": 0.95})
+            # TTPs
+            for match in TTP_PATTERN.finditer(text):
+                value = match.group().upper()
+                if value not in seen:
+                    seen.add(value)
+                    entities["ttps"].append({"text": value, "confidence": 0.95})
 
-        # IOCs - Hashes
-        for match in IOC_HASH_SHA256.finditer(text):
-            value = match.group()
-            if value not in seen:
-                seen.add(value)
-                entities["iocs"].append({"text": value, "type": "sha256", "confidence": 0.99})
+            # IOCs - Hashes
+            for match in IOC_HASH_SHA256.finditer(text):
+                value = match.group()
+                if value not in seen:
+                    seen.add(value)
+                    entities["iocs"].append({"text": value, "type": "sha256", "confidence": 0.99})
 
-        for match in IOC_HASH_SHA1.finditer(text):
-            value = match.group()
-            if value not in seen:
-                seen.add(value)
-                entities["iocs"].append({"text": value, "type": "sha1", "confidence": 0.99})
+            for match in IOC_HASH_SHA1.finditer(text):
+                value = match.group()
+                if value not in seen:
+                    seen.add(value)
+                    entities["iocs"].append({"text": value, "type": "sha1", "confidence": 0.99})
 
-        for match in IOC_HASH_MD5.finditer(text):
-            value = match.group()
-            if value not in seen:
-                seen.add(value)
-                entities["iocs"].append({"text": value, "type": "md5", "confidence": 0.95})
+            for match in IOC_HASH_MD5.finditer(text):
+                value = match.group()
+                if value not in seen:
+                    seen.add(value)
+                    entities["iocs"].append({"text": value, "type": "md5", "confidence": 0.95})
 
-        # IOCs - IPs (filter private)
-        for match in IOC_IP.finditer(text):
-            value = match.group()
-            if not _is_private_ip(value) and value not in seen:
-                seen.add(value)
-                entities["iocs"].append({"text": value, "type": "ipv4", "confidence": 0.9})
+            # IOCs - IPs (filter private)
+            for match in IOC_IP.finditer(text):
+                value = match.group()
+                if not _is_private_ip(value) and value not in seen:
+                    seen.add(value)
+                    entities["iocs"].append({"text": value, "type": "ipv4", "confidence": 0.9})
 
-        # IOCs - Domains
-        for match in IOC_DOMAIN.finditer(text):
-            value = match.group().lower()
-            if value not in seen:
-                seen.add(value)
-                entities["iocs"].append({"text": value, "type": "domain", "confidence": 0.85})
+            # IOCs - Domains
+            for match in IOC_DOMAIN.finditer(text):
+                value = match.group().lower()
+                if value not in seen:
+                    seen.add(value)
+                    entities["iocs"].append({"text": value, "type": "domain", "confidence": 0.85})
 
         # Organization-specific software and technologies
         text_lower = text.lower()
@@ -484,6 +534,12 @@ class NERStage(Stage):
                 entities["software"].append(
                     {"text": term, "confidence": min(0.95, 0.85 + boost)}
                 )
+
+        # Threat actor watch list terms from organization profile.
+        for actor in self._org_threat_actors:
+            if _contains_term(text_lower, actor) and actor not in seen:
+                seen.add(actor)
+                entities["threat_actors"].append({"text": actor, "confidence": 0.95})
 
         # Organization sectors
         for sector in self._org_sectors:
@@ -524,6 +580,14 @@ class NERStage(Stage):
                 return True
         return False
 
+    def _is_org_threat_actor_strict(self, value_lower: str) -> bool:
+        if value_lower in self._org_threat_actors:
+            return True
+        for actor in self._org_threat_actors:
+            if len(actor) >= 3 and actor in value_lower:
+                return True
+        return False
+
     def _extract_relevant_chunks(self, text: str, context_window: int = 200) -> list[tuple[str, int]]:
         text_lower = text.lower()
         chunks: list[tuple[str, int]] = []
@@ -531,7 +595,7 @@ class NERStage(Stage):
 
         # Combine all organization terms
         all_terms = (self._org_software | self._org_technologies | 
-                     self._org_cpe_products | self._org_geographies)
+                     self._org_cpe_products | self._org_geographies | self._org_threat_actors)
 
         # Sort by length (longest first) to avoid substring issues
         sorted_terms = sorted(all_terms, key=len, reverse=True)

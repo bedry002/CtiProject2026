@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import bisect
 import json
 import logging
 import os
@@ -238,14 +239,6 @@ def _context_boost(text: str, start: int, end: int, window: int = 150) -> float:
     return 0.15 if EXPLOIT_CONTEXT_PATTERN.search(context) else 0.0
 
 
-def _contains_term(text_lower: str, term: str) -> bool:
-    if not term:
-        return False
-    if re.search(r"[a-z0-9]", term, re.IGNORECASE):
-        return re.search(r"\b" + re.escape(term) + r"\b", text_lower) is not None
-    return term in text_lower
-
-
 def _first_term_span(text: str, term: str) -> tuple[int, int] | None:
     text_lower = text.lower()
     term_lower = term.lower()
@@ -289,8 +282,8 @@ class NERStage(Stage):
 
     def __init__(
         self,
-        spacy_auto_download: bool = True,
-        spacy_bootstrap_model: str = "en_core_web_lg",
+        spacy_auto_download: bool = SPACY_AUTO_DOWNLOAD,
+        spacy_bootstrap_model: str = SPACY_BOOTSTRAP_MODEL,
         profile_path: str | Path | None = None,
         sbom_path: str | Path | None = None,
         doc_scoped_only: bool = NER_DOC_SCOPED_ONLY,
@@ -307,12 +300,12 @@ class NERStage(Stage):
         self._nlp_lock = threading.Lock()
 
         assets = _get_org_assets(self._profile_path, self._sbom_path)
-        self._org_software = set(assets.software_terms)
-        self._org_technologies = set(assets.technologies)
-        self._org_sectors = set(assets.sectors)
-        self._org_geographies = set(assets.geographies)
-        self._org_cpe_products = set(assets.cpe_products)
-        self._org_threat_actors = set(assets.threat_actors)
+        self._org_software = assets.software_terms
+        self._org_technologies = assets.technologies
+        self._org_sectors = assets.sectors
+        self._org_geographies = assets.geographies
+        self._org_cpe_products = assets.cpe_products
+        self._org_threat_actors = assets.threat_actors
         self._org_sbom_term_map = dict(assets.sbom_term_map)
 
     # public helpers
@@ -324,7 +317,7 @@ class NERStage(Stage):
     def ensure_model(self) -> bool:
         return self._get_nlp() is not None
 
-    # Stage entry point 
+    # Stage entry point
 
     def process(self, event: CurationEvent) -> CurationEvent:
         text = event_to_text(event.raw)
@@ -350,7 +343,7 @@ class NERStage(Stage):
                             original_start = chunk_start + ent.start_char
                             original_end = chunk_start + ent.end_char
 
-                            if label in ("ORG", "PRODUCT") and self._is_org_software_strict(value_lower):
+                            if label in ("ORG", "PRODUCT") and self._is_org_software_match(value_lower):
                                 boost = _context_boost(text, original_start, original_end)
                                 _append_unique(
                                     entities,
@@ -359,7 +352,7 @@ class NERStage(Stage):
                                 )
 
                             if label == "GPE":
-                                if self._is_org_geography_strict(value_lower):
+                                if self._is_org_geography_match(value_lower):
                                     boost = _context_boost(text, original_start, original_end)
                                     _append_unique(
                                         entities,
@@ -368,19 +361,18 @@ class NERStage(Stage):
                                     )
 
                             if label in ("ORG", "PERSON", "NORP"):
-                                if self._is_org_threat_actor_strict(value_lower):
+                                if self._is_org_threat_actor_match(value_lower):
                                     _append_unique(
                                         entities,
                                         "threat_actors",
                                         {"text": value, "confidence": 0.9},
                                     )
                 else:
-                    logger.debug("Event %s: No inventory terms found in text, skipping spaCy", 
+                    logger.debug("Event %s: No inventory terms found in text, skipping spaCy",
                                 event.misp_id)
         except Exception as exc:
             logger.warning("spacy_ner_failed: %s", exc)
 
-        entities.setdefault("malware", [])
         entities.setdefault("geographies", [])
         entities.setdefault("threat_actors", [])
 
@@ -422,9 +414,7 @@ class NERStage(Stage):
                 self._bootstrap_attempted = True
                 logger.info("spacy_bootstrapping_model=%s", self._bootstrap_model)
                 if _download_spacy_model(self._bootstrap_model):
-                    resolved = self._try_models(
-                        spacy, ["en_core_web_lg", self._bootstrap_model]
-                    )
+                    resolved = self._try_models(spacy, [self._bootstrap_model])
                     if resolved is not None:
                         self._nlp_instance = resolved
                         return resolved
@@ -444,7 +434,7 @@ class NERStage(Stage):
                 continue
             except Exception as exc:
                 logger.warning("spacy_model_unavailable: %s", exc)
-                return None
+                continue
         return None
 
     def _regex_entities(self, text: str) -> dict:
@@ -452,56 +442,60 @@ class NERStage(Stage):
         entities: dict = {
             "cves": [], "ttps": [], "iocs": [],
             "threat_actors": [], "sectors": [], "software": [],
-            "geographies": [], "malware": [], "sbom_assets": [],
+            "geographies": [], "sbom_assets": [],
         }
-        seen: set = set()
+        # seen_ioc prevents the same raw IOC string appearing in multiple IOC regex passes.
+        # seen_terms prevents the same org-asset term being claimed by more than one
+        # asset loop — kept separate so an IOC value cannot suppress an asset match.
+        seen_ioc: set[str] = set()
+        seen_terms: set[str] = set()
 
         if not self._doc_scoped_only:
             # CVEs
             for match in CVE_PATTERN.finditer(text):
                 value = match.group().upper()
-                if value not in seen:
-                    seen.add(value)
+                if value not in seen_ioc:
+                    seen_ioc.add(value)
                     entities["cves"].append({"text": value, "confidence": 1.0})
 
             # TTPs
             for match in TTP_PATTERN.finditer(text):
                 value = match.group().upper()
-                if value not in seen:
-                    seen.add(value)
+                if value not in seen_ioc:
+                    seen_ioc.add(value)
                     entities["ttps"].append({"text": value, "confidence": 0.95})
 
             # IOCs - Hashes
             for match in IOC_HASH_SHA256.finditer(text):
                 value = match.group()
-                if value not in seen:
-                    seen.add(value)
+                if value not in seen_ioc:
+                    seen_ioc.add(value)
                     entities["iocs"].append({"text": value, "type": "sha256", "confidence": 0.99})
 
             for match in IOC_HASH_SHA1.finditer(text):
                 value = match.group()
-                if value not in seen:
-                    seen.add(value)
+                if value not in seen_ioc:
+                    seen_ioc.add(value)
                     entities["iocs"].append({"text": value, "type": "sha1", "confidence": 0.99})
 
             for match in IOC_HASH_MD5.finditer(text):
                 value = match.group()
-                if value not in seen:
-                    seen.add(value)
+                if value not in seen_ioc:
+                    seen_ioc.add(value)
                     entities["iocs"].append({"text": value, "type": "md5", "confidence": 0.95})
 
             # IOCs - IPs (filter private)
             for match in IOC_IP.finditer(text):
                 value = match.group()
-                if not _is_private_ip(value) and value not in seen:
-                    seen.add(value)
+                if not _is_private_ip(value) and value not in seen_ioc:
+                    seen_ioc.add(value)
                     entities["iocs"].append({"text": value, "type": "ipv4", "confidence": 0.9})
 
             # IOCs - Domains
             for match in IOC_DOMAIN.finditer(text):
                 value = match.group().lower()
-                if value not in seen:
-                    seen.add(value)
+                if value not in seen_ioc:
+                    seen_ioc.add(value)
                     entities["iocs"].append({"text": value, "type": "domain", "confidence": 0.85})
 
         # Organization-specific software and technologies
@@ -510,69 +504,71 @@ class NERStage(Stage):
         # SBOM-confirmed asset mentions — highest confidence, separate bucket
         # so scoring can weight them independently of generic software mentions.
         for term, bom_ref in self._org_sbom_term_map.items():
-            if _contains_term(text_lower, term) and term not in seen:
-                seen.add(term)
-                span = _first_term_span(text, term)
-                if span is None:
-                    continue
-                boost = _context_boost(text, span[0], span[1])
-                _append_unique(
-                    entities,
-                    "sbom_assets",
-                    {"text": term, "bom_ref": bom_ref, "confidence": min(0.97, 0.90 + boost)},
-                )
+            if term in seen_terms:
+                continue
+            span = _first_term_span(text, term)
+            if span is None:
+                continue
+            seen_terms.add(term)
+            boost = _context_boost(text, span[0], span[1])
+            _append_unique(
+                entities,
+                "sbom_assets",
+                {"text": term, "bom_ref": bom_ref, "confidence": min(0.97, 0.90 + boost)},
+            )
 
         # Remaining org technology terms not already captured as SBOM assets
         remaining_terms = (self._org_technologies | self._org_cpe_products) - self._org_sbom_term_map.keys()
         for term in remaining_terms:
-            if _contains_term(text_lower, term) and term not in seen:
-                seen.add(term)
-                span = _first_term_span(text, term)
-                if span is None:
-                    continue
-                boost = _context_boost(text, span[0], span[1])
-                entities["software"].append(
-                    {"text": term, "confidence": min(0.95, 0.85 + boost)}
-                )
+            if term in seen_terms:
+                continue
+            span = _first_term_span(text, term)
+            if span is None:
+                continue
+            seen_terms.add(term)
+            boost = _context_boost(text, span[0], span[1])
+            entities["software"].append(
+                {"text": term, "confidence": min(0.95, 0.85 + boost)}
+            )
 
         # Threat actor watch list terms from organization profile.
         for actor in self._org_threat_actors:
-            if _contains_term(text_lower, actor) and actor not in seen:
-                seen.add(actor)
+            if actor in seen_terms:
+                continue
+            if _first_term_span(text, actor) is not None:
+                seen_terms.add(actor)
                 entities["threat_actors"].append({"text": actor, "confidence": 0.95})
 
         # Organization sectors
         for sector in self._org_sectors:
-            if _contains_term(text_lower, sector) and sector not in seen:
-                seen.add(sector)
+            if sector in seen_terms:
+                continue
+            if _first_term_span(text, sector) is not None:
+                seen_terms.add(sector)
                 entities["sectors"].append({"text": sector, "confidence": 0.9})
 
         # Organization geographies — word-boundary match to avoid substring noise
         # e.g. "illinois" should not match inside "illinoisville"; "chicago" is fine
         for geo in self._org_geographies:
-            if re.search(r"\b" + re.escape(geo) + r"\b", text_lower) and geo not in seen:
-                seen.add(geo)
+            if geo not in seen_terms and re.search(r"\b" + re.escape(geo) + r"\b", text_lower):
+                seen_terms.add(geo)
                 entities["geographies"].append({"text": geo, "confidence": 0.9})
 
         return entities
 
-    def _is_org_software_strict(self, value_lower: str) -> bool:
-        # Exact match
+    def _is_org_software_match(self, value_lower: str) -> bool:
         if value_lower in self._org_software:
             return True
         if value_lower in self._org_technologies:
             return True
         if value_lower in self._org_cpe_products:
             return True
-
         for term in self._org_software | self._org_technologies | self._org_cpe_products:
             if len(term) > 3 and term in value_lower:
                 return True
-
         return False
 
-    def _is_org_geography_strict(self, value_lower: str) -> bool:
-        """Strict geography matching — exact or contained, minimum 4 chars."""
+    def _is_org_geography_match(self, value_lower: str) -> bool:
         if value_lower in self._org_geographies:
             return True
         for geo in self._org_geographies:
@@ -580,7 +576,7 @@ class NERStage(Stage):
                 return True
         return False
 
-    def _is_org_threat_actor_strict(self, value_lower: str) -> bool:
+    def _is_org_threat_actor_match(self, value_lower: str) -> bool:
         if value_lower in self._org_threat_actors:
             return True
         for actor in self._org_threat_actors:
@@ -591,35 +587,35 @@ class NERStage(Stage):
     def _extract_relevant_chunks(self, text: str, context_window: int = 200) -> list[tuple[str, int]]:
         text_lower = text.lower()
         chunks: list[tuple[str, int]] = []
-        seen_positions: set[int] = set()
+        seen_positions: list[int] = []  # sorted; bisect gives O(log n) overlap checks
 
         # Combine all organization terms
-        all_terms = (self._org_software | self._org_technologies | 
+        all_terms = (self._org_software | self._org_technologies |
                      self._org_cpe_products | self._org_geographies | self._org_threat_actors)
 
         # Sort by length (longest first) to avoid substring issues
         sorted_terms = sorted(all_terms, key=len, reverse=True)
 
         for term in sorted_terms:
-            # Skip very short terms to avoid false positives
             if len(term) < 4:
                 continue
 
-            # Find all occurrences of this term
             for match in re.finditer(r"\b" + re.escape(term) + r"\b", text_lower):
                 pos = match.start()
 
-                # Check if we've already captured this region
-                if any(abs(pos - seen_pos) < context_window for seen_pos in seen_positions):
+                # O(log n): check only the two neighbours in the sorted position list
+                idx = bisect.bisect_left(seen_positions, pos)
+                too_close = (
+                    (idx > 0 and abs(seen_positions[idx - 1] - pos) < context_window)
+                    or (idx < len(seen_positions) and abs(seen_positions[idx] - pos) < context_window)
+                )
+                if too_close:
                     continue
 
-                # Extract context around the term
                 chunk_start = max(0, pos - context_window)
                 chunk_end = min(len(text), pos + len(term) + context_window)
-                chunk = text[chunk_start:chunk_end]
-
-                chunks.append((chunk, chunk_start))
-                seen_positions.add(pos)
+                chunks.append((text[chunk_start:chunk_end], chunk_start))
+                bisect.insort(seen_positions, pos)
 
         logger.debug("Extracted %d relevant chunks from text (inventory terms found)", len(chunks))
         return chunks

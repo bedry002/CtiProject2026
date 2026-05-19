@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from pipeline.base import Stage
 from pipeline.event import CurationEvent
 from pipeline.sbom import SBOMProfile
+from pipeline.text import event_to_text
 
 logger = logging.getLogger(__name__)
 
@@ -48,20 +49,9 @@ _FILE_TYPES    = {"md5", "sha1", "sha256", "sha512", "filename",
 
 
 def _haystack(event: CurationEvent) -> str:
-    raw = event.raw
+    raw_text = event_to_text(event.raw)
     parts = [
-        raw.get("info", ""),
-        raw.get("description", ""),
-        " ".join(t.get("name", "") for t in raw.get("Tag", [])),
-        " ".join(
-            f"{gc.get('value', '')} {gc.get('description', '')}"
-            for g in raw.get("Galaxy", [])
-            for gc in g.get("GalaxyCluster", [])
-        ),
-        " ".join(
-            a.get("value", "") for a in raw.get("Attribute", [])
-            if a.get("type") in {"text", "comment", "vulnerability"}
-        ),
+        raw_text,
         " ".join(
             item["text"] for vals in event.entities.values()
             if isinstance(vals, list)

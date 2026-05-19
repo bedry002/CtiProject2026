@@ -11,6 +11,7 @@ from pipeline.sbom import load_sbom
 MISP_URL = os.getenv('MISP_URL')
 MISP_KEY = os.getenv('MISP_KEY') or os.getenv('MISP_API_KEY')
 MISP_VERIFYCERT = False
+PIPELINE_CONTINUE_ON_STAGE_ERROR = (os.getenv("PIPELINE_CONTINUE_ON_STAGE_ERROR", "false").strip().lower() == "true")
 
 _STRIP_PARENS = re.compile(r"\s*\([^)]*\)")
 

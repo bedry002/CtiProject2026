@@ -6,6 +6,7 @@ import pathlib
 from typing import Any
 from pipeline.base import Stage
 from pipeline.event import CurationEvent
+from pipeline.text import event_to_text
 
 logger = logging.getLogger(__name__)
 
@@ -33,25 +34,6 @@ TOPIC_RELEVANCE_MAP: dict[str, float] = _load_relevance_map()
 def _resolve_relevance(topic_label: str) -> float:
     """Look up a topic label in the relevance map; return 0.0 if unmapped."""
     return TOPIC_RELEVANCE_MAP.get(topic_label, 0.0)
-
-
-def _event_to_text(raw: dict[str, Any]) -> str:
-    """Concatenate all useful text fields from a raw MISP event dict."""
-    parts = [
-        raw.get("info", ""),
-        raw.get("description", ""),
-        " ".join(t.get("name", "") for t in raw.get("Tag", [])),
-        " ".join(
-            f"{gc.get('value', '')} {gc.get('description', '')}"
-            for g in raw.get("Galaxy", [])
-            for gc in g.get("GalaxyCluster", [])
-        ),
-        " ".join(
-            a.get("value", "") for a in raw.get("Attribute", [])
-            if a.get("type") in {"text", "comment", "vulnerability"}
-        ),
-    ]
-    return " ".join(filter(None, parts))
 
 
 def _apply_topic(event: CurationEvent, topic_id: int, model: Any) -> None:
@@ -91,7 +73,7 @@ class TopicModelStage(Stage):
                 e.topic_relevance_score = 0.0
             return events
 
-        texts = [_event_to_text(e.raw) for e in events]
+        texts = [event_to_text(e.raw) for e in events]
         topic_ids, _ = self._model.transform(texts)
 
         for event, topic_id in zip(events, topic_ids):
@@ -106,6 +88,6 @@ class TopicModelStage(Stage):
             event.topic_relevance_score = 0.0
             return event
 
-        topic_ids, _ = self._model.transform([_event_to_text(event.raw)])
+        topic_ids, _ = self._model.transform([event_to_text(event.raw)])
         _apply_topic(event, int(topic_ids[0]), self._model)
         return event

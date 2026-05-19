@@ -23,6 +23,7 @@ from stages.tagger import MISPTaggerStage
 from config import (
     MISP_URL, MISP_KEY, MISP_VERIFYCERT,
     BUSINESS_PROFILE, SBOM_PROFILE, CONFIDENCE_THRESHOLD,
+    PIPELINE_CONTINUE_ON_STAGE_ERROR,
 )
 
 REPORT_PATH = pathlib.Path(__file__).parent / "reports" / "curation_report.html"
@@ -42,7 +43,7 @@ def build_pipeline(misp_client: PyMISP, event_count: int) -> Pipeline:
         ScoringStage(BUSINESS_PROFILE, SBOM_PROFILE),
         MISPTaggerStage(misp_client, dry_run=TAGGER_DRY_RUN),
         ReportStage(REPORT_PATH, threshold=CONFIDENCE_THRESHOLD, all_count=event_count),
-    ])
+    ], continue_on_stage_error=PIPELINE_CONTINUE_ON_STAGE_ERROR)
 
 
 def main() -> None:

@@ -8,12 +8,13 @@ import os
 import re
 import sys
 import threading
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from pipeline.base import Stage
 from pipeline.event import CurationEvent
-from pipeline.sbom import SBOMProfile
+from pipeline.text import event_to_text
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +32,14 @@ _SPACY_FALLBACK_MODELS = ["en_core_web_lg", "en_core_web_md", "en_core_web_sm"]
 
 CVE_PATTERN = re.compile(r"CVE-\d{4}-\d{4,7}", re.IGNORECASE)
 TTP_PATTERN = re.compile(r"T\d{4}(?:\.\d{3})?")
-IOC_IP = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
-IOC_DOMAIN = re.compile(r"\b(?:[a-z0-9-]+\.)+(?:com|net|org|io|ru|cn|info|xyz|top)\b", re.IGNORECASE)
+IOC_IP = re.compile(
+    r"\b(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}"
+    r"(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\b"
+)
+IOC_DOMAIN = re.compile(
+    r"\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\b",
+    re.IGNORECASE,
+)
 IOC_HASH_MD5 = re.compile(r"\b[a-fA-F0-9]{32}\b")
 IOC_HASH_SHA1 = re.compile(r"\b[a-fA-F0-9]{40}\b")
 IOC_HASH_SHA256 = re.compile(r"\b[a-fA-F0-9]{64}\b")
@@ -43,150 +50,124 @@ EXPLOIT_CONTEXT_PATTERN = re.compile(
     r"|privilege.?escalation|injection|buffer.?overflow|use.?after.?free)\b",
     re.IGNORECASE,)
 
-# Module-level state for organization-specific assets
+@dataclass(frozen=True)
+class OrgAssets:
+    software_terms: frozenset[str]
+    technologies: frozenset[str]
+    sectors: frozenset[str]
+    geographies: frozenset[str]
+    cpe_products: frozenset[str]
+    sbom_term_map: dict[str, str]
 
-_org_software_terms: set[str] = set()
-_org_technologies: set[str] = set()
-_org_sectors: set[str] = set()
-_org_geographies: set[str] = set()
-_org_cpe_products: set[str] = set()
-# term.lower() → bom_ref — enables confirmed SBOM asset tagging in NER output
-_org_sbom_term_map: dict[str, str] = {}
+
 _org_asset_lock = threading.Lock()
-_known_actors_lock = threading.Lock()
+_org_asset_cache: dict[tuple[str, str], OrgAssets] = {}
 
 
-def _load_organization_assets() -> None:
-    global _org_software_terms, _org_technologies, _org_sectors, _org_geographies, _org_cpe_products, _org_sbom_term_map
+def _build_org_assets(profile_path: Path, sbom_path: Path) -> OrgAssets:
+    software_terms: set[str] = set()
+    technologies: set[str] = set()
+    sectors: set[str] = set()
+    geographies: set[str] = set()
+    cpe_products: set[str] = set()
+    sbom_term_map: dict[str, str] = {}
 
+    if sbom_path.exists():
+        try:
+            from pipeline.sbom import load_sbom
+
+            sbom = load_sbom(sbom_path)
+            multi_ref_map: dict[str, list[str]] = {}
+            for component in sbom.components:
+                for term in component.match_terms():
+                    t = term.lower()
+                    if len(t) >= 4:
+                        software_terms.add(t)
+                        multi_ref_map.setdefault(t, [])
+                        if component.bom_ref not in multi_ref_map[t]:
+                            multi_ref_map[t].append(component.bom_ref)
+
+            for term, refs in multi_ref_map.items():
+                sbom_term_map[term] = refs[0] if len(refs) == 1 else ", ".join(refs)
+
+            logger.info("sbom_loaded components=%d unique_terms=%d", len(sbom.components), len(software_terms))
+        except Exception as exc:
+            logger.error("sbom_load_failed: %s", exc)
+
+    if profile_path.exists():
+        try:
+            data = json.loads(profile_path.read_text(encoding="utf-8"))
+            org = data.get("organisation", {})
+
+            for func in org.get("critical_business_functions", []):
+                sectors.add(func.lower())
+
+            hq = org.get("primary_headquarters", "")
+            for part in hq.split(","):
+                part = part.strip()
+                if len(part) >= 4:
+                    geographies.add(part.lower())
+
+            tech_stack = data.get("technology_stack", {})
+
+            def extract_tech_list(obj: object) -> None:
+                skip_values = {
+                    "n/a", "none", "true", "false", "hybrid", "basic", "intermediate",
+                    "advanced", "co-managed", "in-house", "on-prem", "public", "private",
+                }
+                if isinstance(obj, dict):
+                    for value in obj.values():
+                        extract_tech_list(value)
+                elif isinstance(obj, list):
+                    for item in obj:
+                        extract_tech_list(item)
+                elif isinstance(obj, str):
+                    s = obj.strip()
+                    s_lower = s.lower()
+                    if (
+                        s
+                        and len(s) > 2
+                        and len(s.split()) <= 4
+                        and s_lower not in skip_values
+                        and not s[0].isdigit()
+                    ):
+                        technologies.add(s_lower)
+
+            extract_tech_list(tech_stack)
+
+            for cpe in data.get("cpe_list", []):
+                parts = cpe.split(":")
+                if len(parts) >= 5:
+                    product = re.sub(r"[_\-]", " ", parts[4]).strip().lower()
+                    if product and product != "*":
+                        cpe_products.add(product)
+
+            logger.info(
+                "org_profile_loaded sectors=%d geographies=%d technologies=%d cpes=%d",
+                len(sectors), len(geographies), len(technologies), len(cpe_products),
+            )
+        except Exception as exc:
+            logger.error("org_profile_load_failed: %s", exc)
+
+    return OrgAssets(
+        software_terms=frozenset(software_terms),
+        technologies=frozenset(technologies),
+        sectors=frozenset(sectors),
+        geographies=frozenset(geographies),
+        cpe_products=frozenset(cpe_products),
+        sbom_term_map=sbom_term_map,
+    )
+
+
+def _get_org_assets(profile_path: Path, sbom_path: Path) -> OrgAssets:
+    cache_key = (str(profile_path.resolve()), str(sbom_path.resolve()))
     with _org_asset_lock:
-        # Load SBOM components
-        sbom_path = Path(SBOM_PATH)
-        if sbom_path.exists():
-            try:
-                from pipeline.sbom import load_sbom
-                sbom = load_sbom(sbom_path)
-
-                # Extract all match terms from SBOM components.
-                # When multiple components share a term (e.g. "windows" → pos-windows11
-                # and server-windows2022), store all refs so the entity display is accurate.
-                # The text-based _sbom_score in scoring.py checks all components independently,
-                # so scoring is unaffected; this only improves NER entity attribution.
-                _multi_ref_map: dict[str, list[str]] = {}
-                for component in sbom.components:
-                    for term in component.match_terms():
-                        t = term.lower()
-                        if len(t) >= 4:
-                            _org_software_terms.add(t)
-                            _multi_ref_map.setdefault(t, [])
-                            if component.bom_ref not in _multi_ref_map[t]:
-                                _multi_ref_map[t].append(component.bom_ref)
-
-                # For the entity map, join multiple refs so the display shows all matches.
-                # Single-ref terms store the ref directly; multi-ref terms store a comma list.
-                for t, refs in _multi_ref_map.items():
-                    _org_sbom_term_map[t] = refs[0] if len(refs) == 1 else ", ".join(refs)
-
-                logger.info("sbom_loaded components=%d unique_terms=%d",
-                           len(sbom.components), len(_org_software_terms))
-            except Exception as exc:
-                logger.error("sbom_load_failed: %s", exc)
-
-        # Load organization profile
-        profile_path = Path(PROFILE_PATH)
-        if profile_path.exists():
-            try:
-                data = json.loads(profile_path.read_text(encoding="utf-8"))
-
-                # Extract sectors/business functions
-                org = data.get("organisation", {})
-                for func in org.get("critical_business_functions", []):
-                    _org_sectors.add(func.lower())
-
-                # Extract geographies from headquarters only.
-                # Jurisdiction codes (e.g. "US", "CA") are intentionally excluded —
-                # they are 2-letter strings that produce substring false positives
-                # in arbitrary threat intel text ("focus", "because", ".ca" domains).
-                hq = org.get("primary_headquarters", "")
-                for part in hq.split(","):
-                    part = part.strip()
-                    if len(part) >= 4:  # skip codes shorter than a city name
-                        _org_geographies.add(part.lower())
-
-                # Extract technology stack from profile
-                tech_stack = data.get("technology_stack", {})
-
-                def _extract_tech_list(obj):
-                    """Recursively extract technology names from the tech stack.
-
-                    Applies a word-count heuristic to distinguish product names
-                    from prose values: strings with ≥5 words are policy sentences
-                    ("Monthly cadence with emergency out-of-band patching…") and
-                    are skipped. Strings with ≤4 words are product/service names
-                    ("Windows Server 2022", "Microsoft Defender for Endpoint").
-                    This makes the extraction automatic for any compliant profile
-                    JSON without requiring a manually maintained key allowlist.
-                    """
-                    _SKIP_VALUES = {"n/a", "none", "true", "false", "hybrid",
-                                    "basic", "intermediate", "advanced", "co-managed",
-                                    "in-house", "on-prem", "public", "private"}
-                    if isinstance(obj, dict):
-                        for value in obj.values():
-                            _extract_tech_list(value)
-                    elif isinstance(obj, list):
-                        for item in obj:
-                            _extract_tech_list(item)
-                    elif isinstance(obj, str):
-                        s = obj.strip()
-                        s_lower = s.lower()
-                        word_count = len(s.split())
-                        if (s
-                                and len(s) > 2
-                                and word_count <= 4
-                                and s_lower not in _SKIP_VALUES
-                                and not s[0].isdigit()):
-                            _org_technologies.add(s_lower)
-
-                _extract_tech_list(tech_stack)
-
-                # Extract CPE list
-                for cpe in data.get("cpe_list", []):
-                    parts = cpe.split(":")
-                    if len(parts) >= 5:
-                        product = re.sub(r"[_\-]", " ", parts[4]).strip().lower()
-                        if product and product != "*":
-                            _org_cpe_products.add(product)
-
-                logger.info("org_profile_loaded sectors=%d geographies=%d technologies=%d cpes=%d",
-                           len(_org_sectors), len(_org_geographies), len(_org_technologies), len(_org_cpe_products))
-            except Exception as exc:
-                logger.error("org_profile_load_failed: %s", exc)
-
-
-# Load organization assets on module import
-_load_organization_assets()
-
-# MISP text assembly
-
-_TEXT_FIELDS = ("info", "description")
-_TEXT_ATTR_TYPES = {"text", "comment", "vulnerability"}
-
-
-def _event_to_text(raw: dict[str, Any]) -> str:
-#Build a single text string from all relevant fields of a MISP event dict.
-    parts = [raw.get(f, "") for f in _TEXT_FIELDS]
-    parts += [
-        a.get("value", "")
-        for a in raw.get("Attribute", [])
-        if a.get("type") in _TEXT_ATTR_TYPES
-    ]
-    parts += [t.get("name", "") for t in raw.get("Tag", [])]
-    parts += [
-        f"{gc.get('value', '')} {gc.get('description', '')}"
-        for g in raw.get("Galaxy", [])
-        for gc in g.get("GalaxyCluster", [])
-    ]
-    return " ".join(filter(None, parts))
+        cached = _org_asset_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        assets = _build_org_assets(profile_path=profile_path, sbom_path=sbom_path)
+        _org_asset_cache[cache_key] = assets
+        return assets
 
 # Shared helpers
 
@@ -220,6 +201,27 @@ def _context_boost(text: str, start: int, end: int, window: int = 150) -> float:
     return 0.15 if EXPLOIT_CONTEXT_PATTERN.search(context) else 0.0
 
 
+def _contains_term(text_lower: str, term: str) -> bool:
+    if not term:
+        return False
+    if re.search(r"[a-z0-9]", term, re.IGNORECASE):
+        return re.search(r"\b" + re.escape(term) + r"\b", text_lower) is not None
+    return term in text_lower
+
+
+def _first_term_span(text: str, term: str) -> tuple[int, int] | None:
+    text_lower = text.lower()
+    term_lower = term.lower()
+    if re.search(r"[a-z0-9]", term_lower, re.IGNORECASE):
+        match = re.search(r"\b" + re.escape(term_lower) + r"\b", text_lower)
+        if match:
+            return match.start(), match.end()
+    idx = text_lower.find(term_lower)
+    if idx == -1:
+        return None
+    return idx, idx + len(term)
+
+
 def _is_private_ip(ip: str) -> bool:
     parts = ip.split(".")
     if len(parts) != 4:
@@ -251,21 +253,27 @@ class NERStage(Stage):
     def __init__(
         self,
         spacy_auto_download: bool = True,
-        spacy_bootstrap_model: str = "en_core_web_lg",) -> None:
+        spacy_bootstrap_model: str = "en_core_web_lg",
+        profile_path: str | Path | None = None,
+        sbom_path: str | Path | None = None,
+    ) -> None:
         self._auto_download = spacy_auto_download
         self._bootstrap_model = spacy_bootstrap_model
+        self._profile_path = Path(profile_path) if profile_path else Path(PROFILE_PATH)
+        self._sbom_path = Path(sbom_path) if sbom_path else Path(SBOM_PATH)
 
         self._nlp_instance = None
         self._nlp_unavailable_flag = False
         self._bootstrap_attempted = False
         self._nlp_lock = threading.Lock()
 
-        # Use organization-specific asset sets
-        self._org_software = _org_software_terms.copy()
-        self._org_technologies = _org_technologies.copy()
-        self._org_sectors = _org_sectors.copy()
-        self._org_geographies = _org_geographies.copy()
-        self._org_cpe_products = _org_cpe_products.copy()
+        assets = _get_org_assets(self._profile_path, self._sbom_path)
+        self._org_software = set(assets.software_terms)
+        self._org_technologies = set(assets.technologies)
+        self._org_sectors = set(assets.sectors)
+        self._org_geographies = set(assets.geographies)
+        self._org_cpe_products = set(assets.cpe_products)
+        self._org_sbom_term_map = dict(assets.sbom_term_map)
 
     # public helpers
 
@@ -279,7 +287,7 @@ class NERStage(Stage):
     # Stage entry point 
 
     def process(self, event: CurationEvent) -> CurationEvent:
-        text = _event_to_text(event.raw)
+        text = event_to_text(event.raw)
         entities = self._regex_entities(text)
 
         try:
@@ -289,33 +297,35 @@ class NERStage(Stage):
                 relevant_chunks = self._extract_relevant_chunks(text)
 
                 if relevant_chunks:
-                    # Only run spaCy on text that mentions our assets
-                    combined_text = " ... ".join(relevant_chunks)
-                    doc = nlp(combined_text[:5000])
+                    # Process chunks independently so long events do not truncate away entities.
+                    for chunk_text, chunk_start in relevant_chunks:
+                        doc = nlp(chunk_text)
+                        for ent in doc.ents:
+                            label = ent.label_
+                            value = _clean_entity_text(ent.text)
+                            if not value or len(value) < 2:
+                                continue
 
-                    for ent in doc.ents:
-                        label = ent.label_
-                        value = _clean_entity_text(ent.text)
-                        if not value or len(value) < 2:
-                            continue
+                            value_lower = value.lower()
+                            original_start = chunk_start + ent.start_char
+                            original_end = chunk_start + ent.end_char
 
-                        # Check if this entity matches organization software/tech
-                        value_lower = value.lower()
-                        if label in ("ORG", "PRODUCT"):
-                            if self._is_org_software_strict(value_lower):
-                                boost = _context_boost(text, 0, len(text))
-                                _append_unique(
-                                    entities,
-                                    "software",
-                                    {"text": value, "confidence": min(0.95, 0.85 + boost)},
-                                )
-                        elif label == "GPE":
-                            if self._is_org_geography_strict(value_lower):
-                                _append_unique(
-                                    entities,
-                                    "geographies",
-                                    {"text": value, "confidence": 0.9},
-                                )
+                            if label in ("ORG", "PRODUCT"):
+                                if self._is_org_software_strict(value_lower):
+                                    boost = _context_boost(text, original_start, original_end)
+                                    _append_unique(
+                                        entities,
+                                        "software",
+                                        {"text": value, "confidence": min(0.95, 0.85 + boost)},
+                                    )
+                            elif label == "GPE":
+                                if self._is_org_geography_strict(value_lower):
+                                    boost = _context_boost(text, original_start, original_end)
+                                    _append_unique(
+                                        entities,
+                                        "geographies",
+                                        {"text": value, "confidence": min(0.95, 0.80 + boost)},
+                                    )
                 else:
                     logger.debug("Event %s: No inventory terms found in text, skipping spaCy", 
                                 event.misp_id)
@@ -449,11 +459,13 @@ class NERStage(Stage):
 
         # SBOM-confirmed asset mentions — highest confidence, separate bucket
         # so scoring can weight them independently of generic software mentions.
-        for term, bom_ref in _org_sbom_term_map.items():
-            if term in text_lower and term not in seen:
+        for term, bom_ref in self._org_sbom_term_map.items():
+            if _contains_term(text_lower, term) and term not in seen:
                 seen.add(term)
-                idx = text_lower.index(term)
-                boost = _context_boost(text, idx, idx + len(term))
+                span = _first_term_span(text, term)
+                if span is None:
+                    continue
+                boost = _context_boost(text, span[0], span[1])
                 _append_unique(
                     entities,
                     "sbom_assets",
@@ -461,19 +473,21 @@ class NERStage(Stage):
                 )
 
         # Remaining org technology terms not already captured as SBOM assets
-        remaining_terms = (self._org_technologies | self._org_cpe_products) - _org_sbom_term_map.keys()
+        remaining_terms = (self._org_technologies | self._org_cpe_products) - self._org_sbom_term_map.keys()
         for term in remaining_terms:
-            if term in text_lower and term not in seen:
+            if _contains_term(text_lower, term) and term not in seen:
                 seen.add(term)
-                idx = text_lower.index(term)
-                boost = _context_boost(text, idx, idx + len(term))
+                span = _first_term_span(text, term)
+                if span is None:
+                    continue
+                boost = _context_boost(text, span[0], span[1])
                 entities["software"].append(
                     {"text": term, "confidence": min(0.95, 0.85 + boost)}
                 )
 
         # Organization sectors
         for sector in self._org_sectors:
-            if sector in text_lower and sector not in seen:
+            if _contains_term(text_lower, sector) and sector not in seen:
                 seen.add(sector)
                 entities["sectors"].append({"text": sector, "confidence": 0.9})
 
@@ -485,23 +499,6 @@ class NERStage(Stage):
                 entities["geographies"].append({"text": geo, "confidence": 0.9})
 
         return entities
-
-    def _is_org_software(self, value_lower: str) -> bool:
-        """Check if a value matches organization's software or technologies."""
-        # Direct match
-        if value_lower in self._org_software:
-            return True
-        if value_lower in self._org_technologies:
-            return True
-        if value_lower in self._org_cpe_products:
-            return True
-
-        # Partial match (contains)
-        for term in self._org_software | self._org_technologies | self._org_cpe_products:
-            if term in value_lower or value_lower in term:
-                return True
-
-        return False
 
     def _is_org_software_strict(self, value_lower: str) -> bool:
         # Exact match
@@ -518,13 +515,6 @@ class NERStage(Stage):
 
         return False
 
-    def _is_org_geography(self, value_lower: str) -> bool:
-        """Check if a value matches organization's geographies."""
-        for geo in self._org_geographies:
-            if geo in value_lower or value_lower in geo:
-                return True
-        return False
-
     def _is_org_geography_strict(self, value_lower: str) -> bool:
         """Strict geography matching — exact or contained, minimum 4 chars."""
         if value_lower in self._org_geographies:
@@ -534,10 +524,10 @@ class NERStage(Stage):
                 return True
         return False
 
-    def _extract_relevant_chunks(self, text: str, context_window: int = 200) -> list[str]:
+    def _extract_relevant_chunks(self, text: str, context_window: int = 200) -> list[tuple[str, int]]:
         text_lower = text.lower()
-        chunks = []
-        seen_positions = set()
+        chunks: list[tuple[str, int]] = []
+        seen_positions: set[int] = set()
 
         # Combine all organization terms
         all_terms = (self._org_software | self._org_technologies | 
@@ -552,15 +542,11 @@ class NERStage(Stage):
                 continue
 
             # Find all occurrences of this term
-            start_pos = 0
-            while True:
-                pos = text_lower.find(term, start_pos)
-                if pos == -1:
-                    break
+            for match in re.finditer(r"\b" + re.escape(term) + r"\b", text_lower):
+                pos = match.start()
 
                 # Check if we've already captured this region
                 if any(abs(pos - seen_pos) < context_window for seen_pos in seen_positions):
-                    start_pos = pos + len(term)
                     continue
 
                 # Extract context around the term
@@ -568,9 +554,8 @@ class NERStage(Stage):
                 chunk_end = min(len(text), pos + len(term) + context_window)
                 chunk = text[chunk_start:chunk_end]
 
-                chunks.append(chunk)
+                chunks.append((chunk, chunk_start))
                 seen_positions.add(pos)
-                start_pos = pos + len(term)
 
         logger.debug("Extracted %d relevant chunks from text (inventory terms found)", len(chunks))
         return chunks

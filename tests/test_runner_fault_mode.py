@@ -13,7 +13,7 @@ class FailsBatchStage(Stage):
     def process(self, event: CurationEvent) -> CurationEvent:
         if event.misp_id == "bad":
             raise RuntimeError("event-level failure")
-        event.topic_label = "processed"
+        event.confidence = 1.0
         return event
 
     def process_batch(self, events: list[CurationEvent]) -> list[CurationEvent]:
@@ -47,7 +47,7 @@ class TestRunnerFaultMode(unittest.TestCase):
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].misp_id, "ok")
-        self.assertEqual(result[0].topic_label, "processed")
+        self.assertEqual(result[0].confidence, 1.0)
 
 
 if __name__ == "__main__":

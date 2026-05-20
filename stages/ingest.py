@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 # (e.g. PhishTank with 60k attributes, MalwareBazaar hash dumps).
 # They produce misleading high ioc_s scores and are not narrative CTI.
 _MAX_ATTRIBUTE_COUNT = 200
+_PAGE_SIZE = 500
 
 
 class MISPIngestStage(Stage):
@@ -33,16 +34,30 @@ class MISPIngestStage(Stage):
     def __init__(self, url: str, key: str, verifycert: bool = True) -> None:
         self._client = PyMISP(url, key, verifycert)
 
-    def fetch(self, limit: int = 100) -> list[CurationEvent]:
-        """Pull narrative CTI events from MISP, skipping bulk IOC feeds."""
-        logger.info("Fetching metadata for up to %d events from MISP", limit)
+    def fetch(self, since_timestamp: int) -> list[CurationEvent]:
+        """Pull narrative CTI events from MISP, skipping bulk IOC feeds.
 
-        # Phase 1: metadata only — fast, small payload
-        stubs = self._client.search(
-            limit=limit,
-            metadata=True,
-            pythonify=True,
+        since_timestamp: Unix timestamp — only return events modified at or after
+            this time.
+        """
+        logger.info("Polling for events since timestamp=%d", since_timestamp)
+
+        # Phase 1: metadata only — paginate until MISP returns an empty page
+        stubs: list[MISPEvent] = []
+        page = 1
+        search_kwargs: dict = dict(
+            metadata=True, pythonify=True, limit=_PAGE_SIZE, timestamp=since_timestamp
         )
+
+        while True:
+            batch = self._client.search(page=page, **search_kwargs)
+            if not batch:
+                break
+            stubs.extend(cast(list[MISPEvent], batch))
+            if len(batch) < _PAGE_SIZE:
+                break
+            page += 1
+
         if not stubs:
             logger.info("No events returned from MISP")
             return []
@@ -50,7 +65,7 @@ class MISPIngestStage(Stage):
         # Filter: skip events with too many attributes (bulk IOC feeds)
         candidate_ids = []
         skipped = 0
-        for stub in cast(list[MISPEvent], stubs):
+        for stub in stubs:
             attr_count = int(getattr(stub, "attribute_count", 0) or 0)
             if attr_count <= _MAX_ATTRIBUTE_COUNT:
                 candidate_ids.append((str(stub.id), str(stub.uuid)))

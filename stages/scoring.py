@@ -23,15 +23,14 @@ class BusinessProfile:
 
 @dataclass
 class ScoringWeights:
-    sbom:       float = 0.35  # SBOM component hits — most precise signal
-    keyword:    float = 0.25  # SBOM-derived compound phrase matches
-    ioc:        float = 0.10  # IOC type analysis (profile-blind — kept low)
-    topic:      float = 0.20  # topic cluster relevance (from TOPIC_RELEVANCE_MAP)
-    technology: float = 0.07  # general tech terms
+    sbom:       float = 0.45  # SBOM component hits — most precise signal
+    keyword:    float = 0.32  # SBOM-derived compound phrase matches
+    ioc:        float = 0.12  # IOC type analysis (profile-blind — kept low)
+    technology: float = 0.08  # general tech terms
     context:    float = 0.03  # sector + geography
 
     def __post_init__(self) -> None:
-        total = self.sbom + self.keyword + self.ioc + self.topic + self.technology + self.context
+        total = self.sbom + self.keyword + self.ioc + self.technology + self.context
         assert abs(total - 1.0) < 1e-6, f"Weights must sum to 1.0, got {total}"
 
 
@@ -58,7 +57,6 @@ def _haystack(event: CurationEvent) -> str:
             for item in vals
             if isinstance(item, dict) and "text" in item
         ),
-        " ".join(t for t, _ in event.topics),
     ]
     return " ".join(filter(None, parts)).lower()
 
@@ -240,13 +238,11 @@ class ScoringStage(Stage):
         ctx_s, ctx_matched = _category_score(ctx_terms, hay, saturation=0.50)
 
         ioc_s, ioc_counts = _ioc_score(event.raw)
-        topic_s = event.topic_relevance_score  # set by TopicModelStage
 
         confidence = round(
             sbom_s  * w.sbom
             + kw_s  * w.keyword
             + ioc_s * w.ioc
-            + topic_s * w.topic
             + tech_s * w.technology
             + ctx_s * w.context,
             4,
@@ -261,13 +257,12 @@ class ScoringStage(Stage):
             "sbom_cve":    round(cve_s,   4),  # CVE→component cross-reference contribution
             "keyword":     round(kw_s,    4),
             "ioc":         round(ioc_s,   4),
-            "topic":       round(topic_s, 4),
             "tech":        round(tech_s,  4),
             "context":     round(ctx_s,   4),
         }
 
         logger.debug(
-            "Event %s → %.4f  sbom=%.3f kw=%.3f ioc=%.3f topic=%.3f tech=%.3f ctx=%.3f",
-            event.misp_id, confidence, sbom_s, kw_s, ioc_s, topic_s, tech_s, ctx_s,
+            "Event %s → %.4f  sbom=%.3f kw=%.3f ioc=%.3f tech=%.3f ctx=%.3f",
+            event.misp_id, confidence, sbom_s, kw_s, ioc_s, tech_s, ctx_s,
         )
         return event

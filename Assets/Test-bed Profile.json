@@ -1,0 +1,376 @@
+{
+  "profile_id": "uuid-v4-apex-retail-2026-001",
+  "profile_version": "1.0",
+  "created": "2026-05-18T00:00:00Z",
+  "modified": "2026-05-18T00:00:00Z",
+  "organisation": {
+<<<<<<< HEAD:Assets/Test-bed Profile (Copy).json
+    "name": "Test-Bed Environment – System Administrator Lab",
+    "naics_code": "5415",
+    "naics_label": "Computer Systems Design and Related Services",
+    "isic_code": "6209",
+    "size": "startup",
+    "jurisdiction": [
+      "AU"
+    ],
+    "primary_headquarters": "Adelaide, South Australia, Australia",
+    "critical_business_functions": [
+      "Security research and vulnerability analysis",
+      "Technical evaluation of defensive controls",
+      "System administration skills development",
+      "Ubuntu server hardening and configuration testing"
+    ],
+    "regulatory_frameworks": [
+      "Internal security policy / ad-hoc research governance"
+    ]
+=======
+    "name": "Apex Retail Solutions",
+    "naics_code": "4521",
+    "naics_label": "Department Stores and Retail Trade",
+    "isic_code": "4719",
+    "size": "medium",
+    "jurisdiction": [
+      "US",
+      "CA"
+    ],
+    "primary_headquarters": "Chicago, Illinois, United States",
+    "business_units": [
+      "Retail Operations",
+      "E-Commerce",
+      "Supply Chain",
+      "Finance",
+      "Customer Support"
+    ],
+    "critical_business_functions": [
+      "In-store and online point-of-sale operations",
+      "Inventory synchronisation across branch locations",
+      "Order fulfilment and last-mile delivery coordination",
+      "Customer loyalty and promotions management"
+    ],
+    "critical_processes": [
+      "Card payment authorisation",
+      "Inventory replenishment",
+      "Customer account authentication",
+      "Order routing and returns processing"
+    ],
+    "regulatory_frameworks": [
+      "PCI DSS",
+      "State privacy laws",
+      "Internal retail security policy"
+    ]
+>>>>>>> a9fc9d901d4537fe064f10f1ce05aae2571403d6:Assets/Test-bed Profile.json
+  },
+  "risk_profile": {
+    "severity_threshold": "medium",
+    "maturity_level": "developing",
+    "risk_tolerance": "medium",
+    "alert_volume": "medium",
+    "priority_asset_classes": [
+      "POS terminals across retail stores",
+      "Azure-hosted e-commerce API services",
+      "Central ERP and inventory databases",
+      "VMware vSphere virtualisation platform",
+      "Microsoft Entra ID / Active Directory identity plane"
+    ],
+    "regulatory_flags": [
+      "payment_data",
+      "pci_dss"
+    ],
+    "recent_incidents": [],
+    "threat_notes": "Primary threats are retail-sector specific: POS malware (FIN7, Magecart), credential stuffing against customer portal, phishing targeting Microsoft 365 staff accounts, and ESXi ransomware targeting virtualisation layer. Supply chain risk via CI/CD pipeline is medium priority given Azure DevOps footprint."
+  },
+  "technology_stack": {
+    "endpoint": {
+<<<<<<< HEAD:Assets/Test-bed Profile (Copy).json
+      "os_workstation": [
+        "Windows 11"
+      ],
+      "os_server": [
+        "Ubuntu 24.04 LTS"
+      ],
+      "edr_solution": [],
+      "edr_recommendation": "Wazuh (open source) or Microsoft Defender for Linux",
+      "device_management": "None – standalone test-bed, no MDM",
+      "patch_management": "Manual – apt update/upgrade on Ubuntu; Windows Update on Windows 11 host"
+=======
+      "os_workstation": [
+        "Windows 11 Pro"
+      ],
+      "os_server": [
+        "Windows Server 2022",
+        "Ubuntu 22.04 LTS"
+      ],
+      "edr_solution": [
+        "Microsoft Defender for Endpoint"
+      ],
+      "mdm": [
+        "Microsoft Intune"
+      ],
+      "device_management": "Microsoft Intune",
+      "patch_management": "Monthly cadence with emergency out-of-band patching for internet-facing services"
+>>>>>>> a9fc9d901d4537fe064f10f1ce05aae2571403d6:Assets/Test-bed Profile.json
+    },
+    "virtualisation": {
+      "hypervisor": "VMware vSphere 8 / ESXi",
+      "hypervisor_type": "Type-1",
+      "host_os": "VMware ESXi",
+      "guest_os": "Windows Server and Ubuntu mixed workloads",
+      "network_mode": "Segmented VLANs with site-to-site VPN",
+      "snapshot_policy": "Snapshots before release changes; retained for 14 days"
+    },
+    "identity": {
+<<<<<<< HEAD:Assets/Test-bed Profile (Copy).json
+      "directory_service": [
+        "Local user accounts only"
+      ],
+      "mfa_solution": [],
+      "mfa_recommendation": "TOTP via Google Authenticator or similar for SSH access",
+      "pam_solution": [
+        "sudo (Linux native)",
+        "Local Administrator (Windows 11 host)"
+      ],
+      "identity_federation": "N/A",
+      "password_policy": "Basic – /etc/security/pwquality.conf on Ubuntu; Windows 11 local policy defaults",
+=======
+      "directory_service": [
+        "Microsoft Entra ID",
+        "Active Directory"
+      ],
+      "mfa_solution": [
+        "Microsoft Authenticator"
+      ],
+      "sso": [
+        "SAML",
+        "OIDC"
+      ],
+      "pam_solution": [
+        "Entra PIM"
+      ],
+      "identity_federation": "SAML/OIDC federation for SaaS platforms",
+      "password_policy": "Minimum 14 characters with blocked common passwords",
+>>>>>>> a9fc9d901d4537fe064f10f1ce05aae2571403d6:Assets/Test-bed Profile.json
+      "passwordless_auth": false,
+      "passwordless_recommendation": "Deploy FIDO2 passkeys for high-privilege accounts"
+    },
+    "network": {
+<<<<<<< HEAD:Assets/Test-bed Profile (Copy).json
+      "firewall_vendor": [
+        "UFW (Ubuntu guest)",
+        "Windows Defender Firewall (Windows 11 host)"
+      ],
+      "vpn_solution": [],
+      "network_monitoring": [],
+      "network_monitoring_recommendation": "tcpdump or Zeek for test-bed traffic analysis",
+      "dns_security": "Default ISP DNS; no dedicated DNS security layer",
+      "network_segmentation": "basic",
+      "network_segmentation_notes": "VirtualBox NAT/Host-Only adapters isolate VM. No VLAN segmentation."
+=======
+      "firewall_vendor": [
+        "Fortinet FortiGate"
+      ],
+      "vpn_solution": [
+        "IPsec site-to-site VPN"
+      ],
+      "proxy": [
+        "Cloud secure web gateway"
+      ],
+      "network_monitoring": [
+        "FortiAnalyzer"
+      ],
+      "dns_security": "Filtered recursive DNS through managed security policy",
+      "network_segmentation": "intermediate",
+      "network_segmentation_notes": "POS VLAN isolated from corporate and e-commerce segments. Site-to-site VPN between branch locations and Azure."
+>>>>>>> a9fc9d901d4537fe064f10f1ce05aae2571403d6:Assets/Test-bed Profile.json
+    },
+    "cloud": {
+      "cloud_platform": [
+        "Microsoft Azure"
+      ],
+      "cloud_native": true,
+      "container_platform": [
+        "AKS"
+      ],
+      "cloud_security_tools": [
+        "Microsoft Defender for Cloud",
+        "Azure Policy"
+      ]
+    },
+    "applications": {
+      "web_server": [
+        "Nginx"
+      ],
+      "database": [
+        "Azure SQL Database",
+        "PostgreSQL"
+      ],
+      "crm_erp": [
+        "Salesforce",
+        "Microsoft Dynamics 365"
+      ],
+      "collaboration": [
+        "Microsoft 365"
+      ],
+      "messaging": [
+        "Exchange Online"
+      ],
+      "data_storage": "hybrid"
+    },
+    "devsecops": {
+      "ci_cd": [
+        "Azure DevOps",
+        "GitHub Actions"
+      ],
+      "artifact_repo": [
+        "Azure Artifacts"
+      ],
+      "container": [
+        "Docker",
+        "Kubernetes"
+      ]
+    },
+    "security_operations": {
+      "siem_platform": [
+        "Microsoft Sentinel"
+      ],
+      "soar_platform": [
+        "Sentinel automation rules"
+      ],
+      "ticketing_system": [
+        "ServiceNow"
+      ],
+      "vuln_scanner": [
+        "Tenable Nessus"
+      ],
+      "threat_intel_platform": [
+        "Microsoft Defender Threat Intelligence"
+      ],
+      "soc_model": "co-managed",
+      "soc_size": 8
+    }
+  },
+  "asset_exposure": {
+    "cpe_inventory_maintained": true,
+    "asset_inventory_coverage": "75-90%",
+    "critical_asset_tagging": true,
+    "critical_assets": [
+      {
+        "name": "POS Terminals (Windows 11 Pro)",
+        "type": "pos_endpoint",
+        "criticality": "high",
+        "notes": "Card present payment processing. PCI DSS in scope. Primary target for memory-scraping POS malware."
+      },
+      {
+        "name": "E-Commerce Platform (Ubuntu 22.04 / Nginx / PostgreSQL)",
+        "type": "web_application",
+        "criticality": "high",
+        "notes": "Internet-facing. Handles customer authentication and card-not-present transactions. Credential stuffing and web skimming risk."
+      },
+      {
+        "name": "VMware ESXi Hypervisor",
+        "type": "virtualisation_layer",
+        "criticality": "high",
+        "notes": "Hosts store server workloads. ESXi ransomware campaigns are an active threat sector-wide."
+      },
+      {
+        "name": "Microsoft Entra ID / Active Directory",
+        "type": "identity_plane",
+        "criticality": "high",
+        "notes": "Compromise grants lateral movement across Azure services and on-premises stores. BEC and token theft are primary attack vectors."
+      },
+      {
+        "name": "Azure SQL Database",
+        "type": "database",
+        "criticality": "high",
+        "notes": "Contains cardholder data and customer PII. SQL injection and data exfiltration risk."
+      },
+      {
+        "name": "Fortinet FortiGate",
+        "type": "perimeter_firewall",
+        "criticality": "high",
+        "notes": "SSL-VPN CVEs have been actively exploited for initial access in retail sector incidents."
+      }
+    ]
+  },
+  "attack_surface": {
+    "internet_facing": true,
+    "internet_facing_assets": [
+      "Nginx e-commerce web server",
+      "Fortinet FortiGate SSL-VPN",
+      "Microsoft 365 / Exchange Online"
+    ],
+    "public_web_applications": true,
+    "remote_workforce": "partial",
+    "cloud_native": true,
+    "ics_ot_present": false,
+    "third_party_integrations": "significant",
+    "third_party_notes": "Salesforce, Microsoft 365, payment gateway integrations. Supply chain risk via Azure DevOps and GitHub Actions pipelines.",
+    "api_exposure": "public",
+    "api_exposure_notes": "E-commerce storefront exposes REST APIs. AKS-hosted microservices with Azure API Management."
+  },
+  "security_controls": {
+    "zero_trust_level": "developing",
+    "zero_trust_notes": "Conditional Access policies in place via Entra ID. VLAN segmentation for POS. Full ZT maturity not yet achieved.",
+    "email_security": "Microsoft Defender for Office 365 Plan 2",
+    "backup_strategy": "cloud",
+    "backup_notes": "Azure Backup for VMs. VMware snapshots retained 14 days. Immutable backup copies for ransomware recovery.",
+    "incident_response_plan": true,
+    "incident_response_notes": "IR runbook aligned to NIST CSF. Co-managed SOC with 8-person team. ServiceNow for ticketing.",
+    "mttd": "Target <4 hours via Microsoft Sentinel alerts",
+    "mttr": "Target <24 hours for critical incidents"
+  },
+  "data_classification": {
+<<<<<<< HEAD:Assets/Test-bed Profile (Copy).json
+    "sensitive_data_types": [
+      "test/synthetic data only"
+    ],
+    "data_classification_scheme": false,
+    "classification_recommendation": "3-tier scheme: Public / Internal / Confidential applied to scripts, configs, and documentation.",
+    "encryption_at_rest": false,
+    "encryption_at_rest_recommendation": "Enable LUKS full-disk encryption on Ubuntu VM disk.",
+=======
+    "sensitive_data_types": [
+      "payment_card_data",
+      "customer_pii",
+      "employee_records"
+    ],
+    "data_classification_scheme": true,
+    "encryption_at_rest": true,
+    "encryption_at_rest_notes": "Azure SQL Transparent Data Encryption. Azure Blob Storage encryption. Windows BitLocker on endpoints.",
+>>>>>>> a9fc9d901d4537fe064f10f1ce05aae2571403d6:Assets/Test-bed Profile.json
+    "encryption_in_transit": true,
+    "encryption_in_transit_notes": "TLS 1.2+ enforced for all web and API endpoints. IPsec for site-to-site VPN."
+  },
+  "threat_actor_watch_list": [
+    "FIN7",
+    "Magecart",
+    "Scattered Spider"
+  ],
+  "operational_context": {
+    "uptime_requirements": "24/7 for e-commerce platform. Store hours (06:00–22:00 local) for POS.",
+    "rto": "4 hours for e-commerce; 1 hour for POS",
+    "rpo": "15 minutes for transaction databases; 4 hours for non-critical systems",
+    "peak_hours": "11:00–20:00 local time, weekends and holiday season",
+    "high_risk_periods": "Black Friday / holiday shopping season; post-hours batch payment processing windows",
+    "security_team_size": 8,
+    "skill_maturity": "mixed"
+  },
+  "governance": {
+    "profile_owner": "CISO – Apex Retail Solutions",
+    "review_frequency": "quarterly",
+    "change_management": "ServiceNow change management. Emergency change process for critical patches.",
+    "audit_requirements": "Annual PCI DSS QSA assessment. Quarterly internal vulnerability scan. Annual penetration test.",
+    "profile_date": "2026-05-18"
+  },
+  "recommended_improvements": [
+    "Deploy FIDO2 phishing-resistant MFA for all privileged accounts",
+    "Enable Microsoft Sentinel UEBA and Entra ID Identity Protection alerts",
+    "Apply VMware ESXi patches and disable OpenSLP to mitigate ESXiArgs-style ransomware",
+    "Implement WAF rules and bot detection for e-commerce customer login portal",
+    "Enforce PCI DSS network segmentation audit across all store VLANs",
+    "Pin and sign CI/CD pipeline dependencies; integrate SBOM scanning into Azure DevOps",
+    "Deploy Entra ID Conditional Access with device compliance requirements for all staff",
+    "Enable Azure Defender for SQL on cardholder data databases",
+    "Conduct tabletop exercise simulating POS malware and ransomware scenarios",
+    "Expand Tenable Nessus coverage to include cloud asset scanning via Azure connector"
+  ]
+}

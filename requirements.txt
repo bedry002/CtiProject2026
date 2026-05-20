@@ -8,3 +8,7 @@ pymisp>=2.4
 # Topic modelling (Stage 3) — uncomment when wiring up
 # scikit-learn>=1.4
 # bertopic>=0.16
+
+# Sbom integration
+requests>=2.31.0
+python-dotenv>=1.0.0

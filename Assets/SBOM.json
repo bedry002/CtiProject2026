@@ -1,10 +1,10 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
-  "serialNumber": "urn:uuid:8e3d7b0f-2d47-4c2a-9d15-f3fdb4d4a001",
+  "serialNumber": "urn:uuid:c4a1e2d3-9f8b-4a01-b7c5-d2e3f4a5b6c7",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-04-10T00:00:00Z",
+    "timestamp": "2026-05-18T00:00:00Z",
     "tools": [
       {
         "vendor": "Anchore",
@@ -14,382 +14,323 @@
     ],
     "authors": [
       {
-        "name": "System Administrator"
+        "name": "Apex Retail Solutions – Security Operations"
       }
     ],
     "component": {
       "type": "application",
-      "bom-ref": "testbed-environment",
-      "name": "Test-Bed Environment – System Administrator Lab",
-      "version": "2026.04",
-      "description": "Standalone Ubuntu 24.04 LTS virtualized security research and administration lab running on Oracle VirtualBox hosted on Windows 11.",
+      "bom-ref": "apex-retail-environment",
+      "name": "Apex Retail Solutions – Production Environment",
+      "version": "2026.05",
+      "description": "Mixed Windows/Ubuntu workload environment spanning retail POS, Azure-hosted e-commerce, VMware virtualisation, and Microsoft identity/security stack.",
       "supplier": {
-        "name": "Internal Research Environment"
-      },
-      "properties": [
-        {
-          "name": "profile_id",
-          "value": "uuid-v4-testbed-2026-001"
-        },
-        {
-          "name": "organisation.size",
-          "value": "startup"
-        },
-        {
-          "name": "jurisdiction",
-          "value": "AU"
-        },
-        {
-          "name": "primary_headquarters",
-          "value": "Adelaide, South Australia, Australia"
-        }
-      ]
+        "name": "Apex Retail Solutions"
+      }
     }
   },
   "components": [
     {
       "type": "operating-system",
-      "bom-ref": "windows11-host",
+      "bom-ref": "pos-windows11",
       "name": "Windows 11 Pro",
       "version": "23H2",
-      "cpe": "cpe:2.3:o:microsoft:windows_11:*:*:*:*:*:*:*:*",
+      "cpe": "cpe:2.3:o:microsoft:windows_11:*:*:*:*:pro:*:*:*",
       "supplier": {
         "name": "Microsoft"
       },
       "properties": [
-        {
-          "name": "asset.role",
-          "value": "host_os"
-        },
-        {
-          "name": "criticality",
-          "value": "medium"
-        }
-      ]
-    },
-    {
-      "type": "platform",
-      "bom-ref": "virtualbox-hypervisor",
-      "name": "Oracle VM VirtualBox",
-      "version": "7.0.18",
-      "cpe": "cpe:2.3:a:oracle:vm_virtualbox:7.*:*:*:*:*:*:*:*",
-      "supplier": {
-        "name": "Oracle"
-      },
-      "properties": [
-        {
-          "name": "hypervisor.type",
-          "value": "Type-2"
-        },
-        {
-          "name": "network.mode",
-          "value": "NAT + Host-Only"
-        },
-        {
-          "name": "criticality",
-          "value": "high"
-        }
+        { "name": "asset.role",   "value": "pos_terminal" },
+        { "name": "asset.group",  "value": "Retail POS" },
+        { "name": "criticality",  "value": "high" }
       ]
     },
     {
       "type": "operating-system",
-      "bom-ref": "ubuntu-vm",
-      "name": "Ubuntu Linux",
-      "version": "24.04 LTS",
-      "cpe": "cpe:2.3:o:canonical:ubuntu_linux:24.04:*:*:*:lts:*:*:*",
-      "supplier": {
-        "name": "Canonical"
-      },
-      "properties": [
-        {
-          "name": "asset.role",
-          "value": "primary_guest_vm"
-        },
-        {
-          "name": "criticality",
-          "value": "high"
-        },
-        {
-          "name": "internet_facing",
-          "value": "false"
-        }
-      ]
-    },
-    {
-      "type": "application",
-      "bom-ref": "openssh-server",
-      "name": "OpenSSH Server",
-      "version": "9.6p1",
-      "supplier": {
-        "name": "OpenBSD"
-      },
-      "properties": [
-        {
-          "name": "service.type",
-          "value": "remote_administration"
-        },
-        {
-          "name": "encrypted_transport",
-          "value": "true"
-        }
-      ]
-    },
-    {
-      "type": "application",
-      "bom-ref": "ufw-firewall",
-      "name": "UFW",
-      "version": "0.36",
-      "supplier": {
-        "name": "Canonical"
-      },
-      "properties": [
-        {
-          "name": "security.control",
-          "value": "host_firewall"
-        }
-      ]
-    },
-    {
-      "type": "application",
-      "bom-ref": "windows-defender-firewall",
-      "name": "Windows Defender Firewall",
-      "version": "Built-in",
+      "bom-ref": "server-windows2022",
+      "name": "Windows Server 2022",
+      "version": "21H2",
+      "cpe": "cpe:2.3:o:microsoft:windows_server_2022:*:*:*:*:*:*:*:*",
       "supplier": {
         "name": "Microsoft"
       },
       "properties": [
-        {
-          "name": "security.control",
-          "value": "host_firewall"
-        }
+        { "name": "asset.role",  "value": "store_server" },
+        { "name": "asset.group", "value": "Store Servers" },
+        { "name": "criticality", "value": "high" }
+      ]
+    },
+    {
+      "type": "operating-system",
+      "bom-ref": "web-ubuntu2204",
+      "name": "Ubuntu Linux",
+      "version": "22.04 LTS",
+      "cpe": "cpe:2.3:o:canonical:ubuntu_linux:22.04:*:*:*:lts:*:*:*",
+      "supplier": {
+        "name": "Canonical"
+      },
+      "properties": [
+        { "name": "asset.role",   "value": "ecommerce_host" },
+        { "name": "asset.group",  "value": "E-Commerce Services" },
+        { "name": "criticality",  "value": "high" },
+        { "name": "match_alias",  "value": "ubuntu" }
+      ]
+    },
+    {
+      "type": "platform",
+      "bom-ref": "vmware-vsphere",
+      "name": "VMware vSphere",
+      "version": "8.0",
+      "cpe": "cpe:2.3:a:vmware:vsphere:8.*:*:*:*:*:*:*:*",
+      "supplier": {
+        "name": "VMware"
+      },
+      "properties": [
+        { "name": "asset.role",  "value": "virtualisation_platform" },
+        { "name": "criticality", "value": "high" }
+      ]
+    },
+    {
+      "type": "platform",
+      "bom-ref": "vmware-esxi",
+      "name": "VMware ESXi",
+      "version": "8.0",
+      "cpe": "cpe:2.3:o:vmware:esxi:8.*:*:*:*:*:*:*:*",
+      "supplier": {
+        "name": "VMware"
+      },
+      "properties": [
+        { "name": "asset.role",  "value": "hypervisor" },
+        { "name": "criticality", "value": "high" }
       ]
     },
     {
       "type": "application",
-      "bom-ref": "sudo-linux",
-      "name": "sudo",
-      "version": "1.9.x",
+      "bom-ref": "nginx-web",
+      "name": "Nginx",
+      "version": "1.24",
+      "cpe": "cpe:2.3:a:nginx:nginx:1.24.*:*:*:*:*:*:*:*",
       "supplier": {
-        "name": "Todd C. Miller"
+        "name": "F5 Networks"
       },
       "properties": [
-        {
-          "name": "privilege_management",
-          "value": "true"
-        }
+        { "name": "asset.role",  "value": "web_server" },
+        { "name": "criticality", "value": "high" }
       ]
     },
     {
       "type": "application",
-      "bom-ref": "apt-package-manager",
-      "name": "APT",
-      "version": "2.7.x",
+      "bom-ref": "azure-sql",
+      "name": "Azure SQL Database",
+      "version": "12.0",
       "supplier": {
-        "name": "Debian Project"
+        "name": "Microsoft"
       },
       "properties": [
-        {
-          "name": "function",
-          "value": "package_management"
-        }
+        { "name": "asset.role",  "value": "primary_database" },
+        { "name": "data.class",  "value": "payment_card_data" },
+        { "name": "criticality", "value": "high" }
       ]
     },
     {
       "type": "application",
-      "bom-ref": "journalctl",
-      "name": "systemd-journald",
-      "version": "255",
+      "bom-ref": "postgresql",
+      "name": "PostgreSQL",
+      "version": "15",
+      "cpe": "cpe:2.3:a:postgresql:postgresql:15.*:*:*:*:*:*:*:*",
       "supplier": {
-        "name": "systemd Project"
+        "name": "PostgreSQL Global Development Group"
       },
       "properties": [
-        {
-          "name": "function",
-          "value": "logging"
-        }
+        { "name": "asset.role",  "value": "ecommerce_database" },
+        { "name": "criticality", "value": "high" }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "fortinet-fortigate",
+      "name": "FortiGate",
+      "version": "7.4",
+      "cpe": "cpe:2.3:o:fortinet:fortios:7.4.*:*:*:*:*:*:*:*",
+      "supplier": {
+        "name": "Fortinet"
+      },
+      "properties": [
+        { "name": "asset.role",  "value": "perimeter_firewall" },
+        { "name": "criticality", "value": "high" }
       ]
     },
     {
       "type": "application",
-      "bom-ref": "bash-shell",
-      "name": "GNU Bash",
-      "version": "5.2",
+      "bom-ref": "entra-id",
+      "name": "Microsoft Entra ID",
+      "version": "current",
       "supplier": {
-        "name": "GNU Project"
+        "name": "Microsoft"
       },
       "properties": [
-        {
-          "name": "function",
-          "value": "shell_environment"
-        }
+        { "name": "asset.role",  "value": "cloud_identity" },
+        { "name": "criticality", "value": "high" },
+        { "name": "match_alias", "value": "entra id" },
+        { "name": "match_alias", "value": "entra" }
       ]
     },
     {
       "type": "application",
-      "bom-ref": "python-runtime",
-      "name": "Python",
-      "version": "3.12",
+      "bom-ref": "active-directory",
+      "name": "Active Directory",
+      "version": "Windows Server 2022",
+      "cpe": "cpe:2.3:a:microsoft:active_directory:*:*:*:*:*:*:*:*",
       "supplier": {
-        "name": "Python Software Foundation"
+        "name": "Microsoft"
       },
       "properties": [
-        {
-          "name": "function",
-          "value": "automation_and_security_scripts"
-        }
+        { "name": "asset.role",  "value": "on_prem_identity" },
+        { "name": "criticality", "value": "high" }
       ]
-    }
-  ],
-  "services": [
+    },
     {
-      "bom-ref": "ssh-service",
-      "name": "SSH Administration",
-      "provider": {
-        "name": "OpenSSH"
+      "type": "application",
+      "bom-ref": "microsoft-365",
+      "name": "Microsoft 365",
+      "version": "current",
+      "supplier": {
+        "name": "Microsoft"
       },
-      "endpoints": [
-        "ssh://192.168.56.10:22"
-      ],
-      "authenticated": true,
-      "x-trust-boundary": true,
       "properties": [
-        {
-          "name": "exposure",
-          "value": "host-only"
-        }
-      ]
-    }
-  ],
-  "dependencies": [
-    {
-      "ref": "virtualbox-hypervisor",
-      "dependsOn": [
-        "windows11-host"
+        { "name": "asset.role",  "value": "productivity_suite" },
+        { "name": "criticality", "value": "medium" }
       ]
     },
     {
-      "ref": "ubuntu-vm",
-      "dependsOn": [
-        "virtualbox-hypervisor"
+      "type": "platform",
+      "bom-ref": "aks",
+      "name": "Azure Kubernetes Service",
+      "version": "1.29",
+      "supplier": {
+        "name": "Microsoft"
+      },
+      "properties": [
+        { "name": "asset.role",  "value": "container_orchestration" },
+        { "name": "criticality", "value": "medium" },
+        { "name": "match_alias", "value": "aks" },
+        { "name": "match_alias", "value": "kubernetes" }
       ]
     },
     {
-      "ref": "openssh-server",
-      "dependsOn": [
-        "ubuntu-vm"
+      "type": "application",
+      "bom-ref": "salesforce-crm",
+      "name": "Salesforce",
+      "version": "Spring 26",
+      "supplier": {
+        "name": "Salesforce"
+      },
+      "properties": [
+        { "name": "asset.role",  "value": "crm" },
+        { "name": "criticality", "value": "medium" }
       ]
     },
     {
-      "ref": "ufw-firewall",
-      "dependsOn": [
-        "ubuntu-vm"
-      ]
-    },
-    {
-      "ref": "sudo-linux",
-      "dependsOn": [
-        "ubuntu-vm"
-      ]
-    },
-    {
-      "ref": "apt-package-manager",
-      "dependsOn": [
-        "ubuntu-vm"
-      ]
-    },
-    {
-      "ref": "journalctl",
-      "dependsOn": [
-        "ubuntu-vm"
-      ]
-    },
-    {
-      "ref": "python-runtime",
-      "dependsOn": [
-        "ubuntu-vm"
+      "type": "application",
+      "bom-ref": "microsoft-sentinel",
+      "name": "Microsoft Sentinel",
+      "version": "current",
+      "supplier": {
+        "name": "Microsoft"
+      },
+      "properties": [
+        { "name": "asset.role",  "value": "siem" },
+        { "name": "criticality", "value": "medium" },
+        { "name": "match_alias", "value": "sentinel" }
       ]
     }
   ],
   "vulnerabilities": [
     {
-      "id": "LAB-RISK-0001",
-      "source": {
-        "name": "Internal Risk Assessment"
-      },
-      "ratings": [
-        {
-          "severity": "medium"
-        }
+      "id": "APEX-RISK-0001",
+      "source": { "name": "Internal Risk Assessment" },
+      "ratings": [ { "severity": "high" } ],
+      "description": "POS malware targeting payment card data on Windows POS terminals. Threat actors use memory scraping and skimmer implants to capture track data during card authorization.",
+      "affects": [ { "ref": "pos-windows11" } ],
+      "known_cves": [
+        "CVE-2025-21333", "CVE-2025-21334", "CVE-2025-21335",
+        "CVE-2024-38213", "CVE-2024-43572"
       ],
-      "description": "Password-based SSH authentication may allow brute-force attacks if the VM becomes externally accessible.",
-      "affects": [
-        {
-          "ref": "openssh-server"
-        }
+      "recommendation": "Deploy application allowlisting, PA-DSS validated POS software, and network-level P2PE."
+    },
+    {
+      "id": "APEX-RISK-0002",
+      "source": { "name": "Internal Risk Assessment" },
+      "ratings": [ { "severity": "high" } ],
+      "description": "Credential stuffing attacks targeting e-commerce customer login and loyalty account portals. High volume automated login attempts using leaked credential datasets.",
+      "affects": [ { "ref": "web-ubuntu2204" }, { "ref": "nginx-web" }, { "ref": "azure-sql" } ],
+      "known_cves": [
+        "CVE-2024-7264", "CVE-2024-9143",
+        "CVE-2024-32760", "CVE-2025-23419"
       ],
-      "recommendation": "Implement SSH key-only authentication and disable password login."
+      "recommendation": "Enforce MFA on all customer accounts, deploy bot detection and CAPTCHA, monitor for high-velocity login failures."
     },
     {
-      "id": "LAB-RISK-0002",
-      "source": {
-        "name": "Internal Risk Assessment"
-      },
-      "ratings": [
-        {
-          "severity": "medium"
-        }
+      "id": "APEX-RISK-0003",
+      "source": { "name": "Internal Risk Assessment" },
+      "ratings": [ { "severity": "high" } ],
+      "description": "VMware ESXi ransomware campaigns targeting hypervisor layer. Campaigns such as ESXiArgs exploit unpatched OpenSLP or HTTPS vulnerabilities to encrypt VM datastores and disable backup snapshots.",
+      "affects": [ { "ref": "vmware-esxi" }, { "ref": "vmware-vsphere" } ],
+      "known_cves": [
+        "CVE-2021-21974", "CVE-2021-21985", "CVE-2021-22005",
+        "CVE-2022-31696", "CVE-2022-31697", "CVE-2022-31699",
+        "CVE-2023-20867", "CVE-2023-20869", "CVE-2023-20870",
+        "CVE-2024-22252", "CVE-2024-22254", "CVE-2024-22255"
       ],
-      "description": "No centralized logging or HIDS currently deployed.",
-      "affects": [
-        {
-          "ref": "ubuntu-vm"
-        }
+      "recommendation": "Apply VMware security patches promptly, disable OpenSLP service, restrict management network access."
+    },
+    {
+      "id": "APEX-RISK-0004",
+      "source": { "name": "Internal Risk Assessment" },
+      "ratings": [ { "severity": "high" } ],
+      "description": "SQL injection and data exfiltration risk against Azure SQL Database and PostgreSQL instances hosting cardholder data and customer PII. Web application input validation gaps may allow unauthorised data access.",
+      "affects": [ { "ref": "azure-sql" }, { "ref": "postgresql" } ],
+      "known_cves": [
+        "CVE-2023-2454", "CVE-2023-2455", "CVE-2023-5869",
+        "CVE-2024-0397", "CVE-2024-10978", "CVE-2024-10979"
       ],
-      "recommendation": "Deploy Wazuh agent or ELK stack for monitoring and alerting."
+      "recommendation": "Enforce parameterised queries, deploy WAF rules, enable Azure Defender for SQL, restrict DB egress."
     },
     {
-      "id": "LAB-RISK-0003",
-      "source": {
-        "name": "Internal Risk Assessment"
-      },
-      "ratings": [
-        {
-          "severity": "low"
-        }
+      "id": "APEX-RISK-0005",
+      "source": { "name": "Internal Risk Assessment" },
+      "ratings": [ { "severity": "high" } ],
+      "description": "Phishing campaigns targeting Microsoft 365 and Entra ID credentials. Business email compromise and OAuth token theft can lead to account takeover and lateral movement across Azure-connected services.",
+      "affects": [ { "ref": "microsoft-365" }, { "ref": "entra-id" } ],
+      "known_cves": [
+        "CVE-2023-23397", "CVE-2024-21413",
+        "CVE-2023-36745", "CVE-2023-36744",
+        "CVE-2024-30103", "CVE-2024-38021"
       ],
-      "description": "No full-disk encryption configured for Ubuntu VM storage.",
-      "affects": [
-        {
-          "ref": "ubuntu-vm"
-        }
+      "recommendation": "Enforce phishing-resistant MFA (FIDO2/passkeys), deploy Defender for Office 365, enable Conditional Access policies."
+    },
+    {
+      "id": "APEX-RISK-0006",
+      "source": { "name": "Internal Risk Assessment" },
+      "ratings": [ { "severity": "medium" } ],
+      "description": "Supply chain compromise via CI/CD pipeline. Malicious package injection or poisoned build artefacts in Azure DevOps or GitHub Actions could propagate backdoors into production e-commerce containers.",
+      "affects": [ { "ref": "aks" } ],
+      "known_cves": [
+        "CVE-2023-3676", "CVE-2023-3955", "CVE-2023-3893",
+        "CVE-2024-5321"
       ],
-      "recommendation": "Enable LUKS full-disk encryption."
-    }
-  ],
-  "properties": [
-    {
-      "name": "security.maturity",
-      "value": "developing"
+      "recommendation": "Enforce signed commits, pin dependency versions, scan artefacts with SBOM tools, restrict pipeline permissions."
     },
     {
-      "name": "risk.tolerance",
-      "value": "medium"
-    },
-    {
-      "name": "backup.strategy",
-      "value": "offline snapshots + exported OVA"
-    },
-    {
-      "name": "cloud.native",
-      "value": "false"
-    },
-    {
-      "name": "internet.facing",
-      "value": "false"
-    },
-    {
-      "name": "soc.model",
-      "value": "in-house"
+      "id": "APEX-RISK-0007",
+      "source": { "name": "Internal Risk Assessment" },
+      "ratings": [ { "severity": "medium" } ],
+      "description": "Fortinet FortiGate SSL-VPN and management interface exposure. CVEs in FortiOS SSL-VPN have been actively exploited for initial access, enabling lateral movement to internal store networks.",
+      "affects": [ { "ref": "fortinet-fortigate" } ],
+      "known_cves": [
+        "CVE-2022-40684", "CVE-2023-27997", "CVE-2023-48788",
+        "CVE-2024-21762", "CVE-2024-55591", "CVE-2025-32756"
+      ],
+      "recommendation": "Restrict management access to trusted IPs, apply FortiOS patches, monitor for anomalous VPN sessions."
     }
   ]
 }

@@ -1,18 +1,30 @@
 """Core data model passed between pipeline stages."""
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, TypeAlias, TypedDict
+
+
+class EntityRecord(TypedDict, total=False):
+    text: str
+    confidence: float
+    type: str
+    bom_ref: str
+
+
+EntityBucket: TypeAlias = list[EntityRecord]
+EntityMap: TypeAlias = dict[str, EntityBucket | str]
 
 
 @dataclass
 class CurationEvent:
     """Represents a single MISP event as it flows through the pipeline."""
 
-    misp_id: str
+    misp_id: str          # numeric database ID (e.g. "1574")
+    misp_uuid: str        # MISP UUID — required by tag/untag API calls
     raw: dict[str, Any]
 
     # Populated by NER stage
-    entities: dict[str, list[str]] = field(default_factory=dict)
+    entities: EntityMap = field(default_factory=dict)
 
     # Populated by topic modelling stage
     topics: list[tuple[str, float]] = field(default_factory=list)

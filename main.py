@@ -1,13 +1,19 @@
-"""Entry point — wire stages together and run the pipeline."""
+"""Entry point; wire stages together and run the pipeline."""
 
+from bertopic import BERTopic
 import logging
 import pathlib
 import urllib3
+from typing import Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
 from pipeline.runner import Pipeline
+from pymisp import PyMISP
 from stages.ingest import MISPIngestStage
 from stages.ner import NERStage
 from stages.topics import TopicModelStage
@@ -17,36 +23,32 @@ from stages.tagger import MISPTaggerStage
 from config import (
     MISP_URL, MISP_KEY, MISP_VERIFYCERT,
     BUSINESS_PROFILE, SBOM_PROFILE, CONFIDENCE_THRESHOLD,
+    PIPELINE_CONTINUE_ON_STAGE_ERROR,
 )
 
 REPORT_PATH = pathlib.Path(__file__).parent / "reports" / "curation_report.html"
 
-# Set to False once you are satisfied the tags are correct
+# Set to False once the tags are correct
 TAGGER_DRY_RUN = True
 
 
-def build_pipeline(misp_client, event_count: int) -> Pipeline:
-    import spacy
-    from bertopic import BERTopic
-
-    nlp = spacy.load("en_core_web_lg")
-    logging.info("Loaded spaCy model: en_core_web_lg")
-
+def build_pipeline(misp_client: PyMISP, event_count: int) -> Pipeline:
     model_path = pathlib.Path(__file__).parent / "models" / "bertopic_model"
-    topic_model = BERTopic.load(str(model_path))
+    topic_model: Any = BERTopic.load(str(model_path))
     logging.info("Loaded BERTopic model from %s", model_path)
 
     return Pipeline([
-        NERStage(nlp),
+        NERStage(),
         TopicModelStage(topic_model),
         ScoringStage(BUSINESS_PROFILE, SBOM_PROFILE),
         MISPTaggerStage(misp_client, dry_run=TAGGER_DRY_RUN),
         ReportStage(REPORT_PATH, threshold=CONFIDENCE_THRESHOLD, all_count=event_count),
-    ])
+    ], continue_on_stage_error=PIPELINE_CONTINUE_ON_STAGE_ERROR)
 
 
 def main() -> None:
-    from pymisp import PyMISP
+    if not MISP_URL or not MISP_KEY:
+        raise RuntimeError("MISP_URL and MISP_KEY environment variables must be set")
     misp_client = PyMISP(MISP_URL, MISP_KEY, MISP_VERIFYCERT)
 
     ingest = MISPIngestStage(MISP_URL, MISP_KEY, MISP_VERIFYCERT)
@@ -61,10 +63,10 @@ def main() -> None:
 
     relevant = [e for e in results if (e.confidence or 0) >= CONFIDENCE_THRESHOLD]
     print(f"\n--- Curation Results: {len(relevant)}/{len(results)} relevant ---")
-    for event in sorted(relevant, key=lambda e: e.confidence, reverse=True):
+    for event in sorted(relevant, key=lambda e: e.confidence or 0.0, reverse=True):
         print(
             f"  [{event.confidence:.4f}] Event {event.misp_id} | "
-            f"matched={event.matched_profile_terms}"
+            f"matched={event.matched_sbom_components}"
         )
     print(f"\nReport: {REPORT_PATH}")
 

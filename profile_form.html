@@ -1,696 +1,1041 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Organisation CTI Profile</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organisation CTI Profile</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0d0f12;
-    --surface: #13161b;
-    --surface2: #1a1e25;
-    --border: #252930;
-    --accent: #00e5a0;
-    --accent-dim: rgba(0,229,160,0.08);
-    --accent-mid: rgba(0,229,160,0.2);
-    --text: #e2e4e8;
-    --muted: #6b7280;
-    --danger: #ff4d6d;
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'IBM Plex Sans', sans-serif;
-  }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 14px;
-    line-height: 1.6;
-    min-height: 100vh;
-  }
-
-  /* Layout */
-  .shell { max-width: 860px; margin: 0 auto; padding: 48px 24px 96px; }
-
-  /* Header */
-  .hdr { border-bottom: 1px solid var(--border); padding-bottom: 32px; margin-bottom: 48px; }
-  .hdr-tag { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
-  .hdr h1 { font-size: 26px; font-weight: 300; color: var(--text); letter-spacing: -.02em; }
-  .hdr p { color: var(--muted); margin-top: 8px; font-size: 13px; max-width: 520px; }
-
-  /* Progress */
-  .progress-bar { display: flex; gap: 4px; margin-bottom: 48px; }
-  .prog-seg { flex: 1; height: 3px; background: var(--border); border-radius: 2px; transition: background .3s; }
-  .prog-seg.done { background: var(--accent); }
-  .prog-seg.active { background: rgba(0,229,160,.4); }
-
-  /* Sections */
-  .section { display: none; animation: fadeUp .25s ease; }
-  .section.active { display: block; }
-  @keyframes fadeUp { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
-
-  .section-label { font-family: var(--mono); font-size: 10px; color: var(--accent); letter-spacing: .15em; text-transform: uppercase; margin-bottom: 6px; }
-  .section-title { font-size: 18px; font-weight: 400; margin-bottom: 4px; }
-  .section-desc { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
-
-  /* Fields */
-  .field { margin-bottom: 24px; }
-  .field label { display: block; font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
-  .field label .req { color: var(--accent); margin-left: 3px; }
-  .field .hint { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-
-  input[type=text], input[type=email], input[type=number], select, textarea {
-    width: 100%; background: var(--surface); border: 1px solid var(--border);
-    color: var(--text); font-family: var(--sans); font-size: 13px;
-    padding: 10px 14px; border-radius: 6px; outline: none;
-    transition: border-color .2s, background .2s;
-    appearance: none;
-  }
-  input:focus, select:focus, textarea:focus {
-    border-color: var(--accent); background: var(--surface2);
-  }
-  textarea { resize: vertical; min-height: 80px; }
-
-  /* Tag input */
-  .tag-wrap { display: flex; flex-wrap: wrap; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-height: 42px; cursor: text; transition: border-color .2s; }
-  .tag-wrap:focus-within { border-color: var(--accent); }
-  .tag { display: inline-flex; align-items: center; gap: 5px; background: var(--accent-dim); border: 1px solid var(--accent-mid); color: var(--accent); font-family: var(--mono); font-size: 11px; padding: 2px 8px; border-radius: 4px; }
-  .tag button { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; opacity: .7; }
-  .tag button:hover { opacity: 1; }
-  .tag-input { background: none; border: none; outline: none; color: var(--text); font-family: var(--sans); font-size: 13px; flex: 1; min-width: 120px; padding: 2px 4px; }
-
-  /* Radio / checkbox grid */
-  .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
-  .opt { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; cursor: pointer; transition: border-color .2s, background .2s; }
-  .opt:hover { border-color: var(--accent-mid); }
-  .opt input { accent-color: var(--accent); width: 15px; height: 15px; flex-shrink: 0; }
-  .opt span { font-size: 13px; }
-  .opt.selected { border-color: var(--accent-mid); background: var(--accent-dim); }
-
-  /* Row */
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
-
-  /* Nav */
-  .nav { display: flex; justify-content: space-between; align-items: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
-  .step-info { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-  .btn-row { display: flex; gap: 10px; }
-  button.btn { font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 10px 22px; border-radius: 6px; border: none; cursor: pointer; transition: opacity .2s; }
-  button.btn-ghost { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
-  button.btn-ghost:hover { color: var(--text); border-color: var(--muted); }
-  button.btn-primary { background: var(--accent); color: #0d0f12; }
-  button.btn-primary:hover { opacity: .88; }
-
-  /* Output */
-  #output-section { display: none; }
-  #output-section.active { display: block; }
-  .output-wrap { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .output-hdr { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface2); }
-  .output-hdr span { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-  .copy-btn { font-family: var(--mono); font-size: 11px; background: none; border: 1px solid var(--border); color: var(--muted); padding: 4px 10px; border-radius: 4px; cursor: pointer; transition: all .2s; }
-  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
-  pre { padding: 20px; overflow-x: auto; font-family: var(--mono); font-size: 12px; line-height: 1.7; color: var(--text); white-space: pre; }
-  .dl-btn { display: block; width: 100%; margin-top: 12px; text-align: center; background: var(--accent); color: #0d0f12; font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 12px; border-radius: 6px; border: none; cursor: pointer; }
-  .dl-btn:hover { opacity: .88; }
-  .restart-btn { display: block; width: 100%; margin-top: 8px; text-align: center; background: none; border: 1px solid var(--border); color: var(--muted); font-family: var(--sans); font-size: 13px; padding: 12px; border-radius: 6px; cursor: pointer; }
-  .restart-btn:hover { border-color: var(--muted); color: var(--text); }
-</style>
-</head>
-<body>
-<div class="shell">
-
-  <div class="hdr">
-    <div class="hdr-tag">CTI Curation Pipeline</div>
-    <h1>Organisation Profile</h1>
-    <p>Please complete this form so that we can accurately filter and score incoming threat intelligence.</p>
-  </div>
-
-  <div class="progress-bar" id="progress"></div>
-
-  <!-- SECTION 1: Organisation -->
-  <div class="section active" id="s1">
-    <div class="section-label">Step 1 of 6</div>
-    <div class="section-title">Organisation</div>
-    <div class="section-desc">Basic details about your organisation.</div>
-
-    <div class="field">
-      <label>Organisation name <span class="req">*</span></label>
-      <input type="text" id="org_name" placeholder="e.g. Acme Security Lab">
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>NAICS code</label>
-        <div class="hint">Industry classification code</div>
-        <input type="text" id="naics_code" placeholder="e.g. 5415">
-      </div>
-      <div class="field">
-        <label>Organisation size</label>
-        <select id="org_size">
-          <option value="">Select…</option>
-          <option value="startup">Startup (&lt;10)</option>
-          <option value="small">Small (10–49)</option>
-          <option value="medium">Medium (50–249)</option>
-          <option value="large">Large (250+)</option>
-          <option value="enterprise">Enterprise (1000+)</option>
-        </select>
-      </div>
-    </div>
-    <div class="field">
-      <label>Primary headquarters</label>
-      <input type="text" id="hq" placeholder="e.g. Adelaide, South Australia, Australia">
-    </div>
-    <div class="field">
-      <label>Jurisdiction(s)</label>
-      <div class="hint">Press Enter after each country code</div>
-      <div class="tag-wrap" id="jurisdiction-wrap">
-        <input class="tag-input" id="jurisdiction-input" placeholder="e.g. AU" data-target="jurisdiction">
-      </div>
-    </div>
-    <div class="field">
-      <label>Critical business functions</label>
-      <div class="hint">Press Enter after each function</div>
-      <div class="tag-wrap" id="cbf-wrap">
-        <input class="tag-input" id="cbf-input" placeholder="e.g. Security research" data-target="cbf">
-      </div>
-    </div>
-    <div class="field">
-      <label>Regulatory frameworks</label>
-      <div class="hint">Press Enter after each framework</div>
-      <div class="tag-wrap" id="reg-wrap">
-        <input class="tag-input" id="reg-input" placeholder="e.g. ISO 27001" data-target="reg">
-      </div>
-    </div>
-  </div>
-
-  <!-- SECTION 2: Risk Profile -->
-  <div class="section" id="s2">
-    <div class="section-label">Step 2 of 6</div>
-    <div class="section-title">Risk profile</div>
-    <div class="section-desc">Define your organisation's risk posture and alert preferences.</div>
-
-    <div class="field">
-      <label>Severity threshold <span class="req">*</span></label>
-      <div class="hint">Minimum severity level for CTI alerts</div>
-      <div class="options-grid">
-        <label class="opt"><input type="radio" name="severity" value="low"><span>Low</span></label>
-        <label class="opt"><input type="radio" name="severity" value="medium" checked><span>Medium</span></label>
-        <label class="opt"><input type="radio" name="severity" value="high"><span>High</span></label>
-        <label class="opt"><input type="radio" name="severity" value="critical"><span>Critical only</span></label>
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>Security maturity level</label>
-        <select id="maturity">
-          <option value="nascent">Nascent</option>
-          <option value="developing" selected>Developing</option>
-          <option value="defined">Defined</option>
-          <option value="managed">Managed</option>
-          <option value="optimising">Optimising</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Risk tolerance</label>
-        <select id="risk_tolerance">
-          <option value="low">Low</option>
-          <option value="medium" selected>Medium</option>
-          <option value="high">High</option>
-        </select>
-      </div>
-    </div>
-    <div class="field">
-      <label>Preferred alert volume</label>
-      <div class="options-grid">
-        <label class="opt"><input type="radio" name="alert_vol" value="low" checked><span>Low — curated only</span></label>
-        <label class="opt"><input type="radio" name="alert_vol" value="medium"><span>Medium</span></label>
-        <label class="opt"><input type="radio" name="alert_vol" value="high"><span>High — all relevant</span></label>
-      </div>
-    </div>
-    <div class="field">
-      <label>Priority asset classes</label>
-      <div class="hint">Press Enter after each asset</div>
-      <div class="tag-wrap" id="assets-wrap">
-        <input class="tag-input" id="assets-input" placeholder="e.g. Ubuntu 24.04 LTS VM" data-target="assets">
-      </div>
-    </div>
-    <div class="field">
-      <label>Threat notes</label>
-      <div class="hint">Known risk vectors, threat actors, or concerns</div>
-      <textarea id="threat_notes" placeholder="e.g. Primary risk vectors are misconfiguration and unpatched software…"></textarea>
-    </div>
-  </div>
-
-  <!-- SECTION 3: Technology Stack -->
-  <div class="section" id="s3">
-    <div class="section-label">Step 3 of 6</div>
-    <div class="section-title">Technology stack</div>
-    <div class="section-desc">Endpoint, virtualisation, identity, and network details.</div>
-
-    <div class="row">
-      <div class="field">
-        <label>Workstation OS(es)</label>
-        <div class="hint">Press Enter after each</div>
-        <div class="tag-wrap" id="os-work-wrap">
-          <input class="tag-input" id="os-work-input" placeholder="e.g. Windows 11" data-target="os_workstation">
-        </div>
-      </div>
-      <div class="field">
-        <label>Server OS(es)</label>
-        <div class="hint">Press Enter after each</div>
-        <div class="tag-wrap" id="os-srv-wrap">
-          <input class="tag-input" id="os-srv-input" placeholder="e.g. Ubuntu 24.04 LTS" data-target="os_server">
-        </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>Hypervisor</label>
-        <input type="text" id="hypervisor" placeholder="e.g. Oracle VirtualBox 7.x">
-      </div>
-      <div class="field">
-        <label>Hypervisor type</label>
-        <select id="hypervisor_type">
-          <option value="">Select…</option>
-          <option value="Type-1">Type-1 (bare metal)</option>
-          <option value="Type-2">Type-2 (hosted)</option>
-          <option value="none">None</option>
-        </select>
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>Firewall vendor(s)</label>
-        <div class="hint">Press Enter after each</div>
-        <div class="tag-wrap" id="fw-wrap">
-          <input class="tag-input" id="fw-input" placeholder="e.g. UFW" data-target="firewall_vendor">
-        </div>
-      </div>
-      <div class="field">
-        <label>Network segmentation</label>
-        <select id="net_seg">
-          <option value="none">None</option>
-          <option value="basic" selected>Basic</option>
-          <option value="vlan">VLAN segmented</option>
-          <option value="microsegmented">Microsegmented</option>
-        </select>
-      </div>
-    </div>
-    <div class="field">
-      <label>Cloud platforms</label>
-      <div class="hint">Leave empty if not applicable</div>
-      <div class="tag-wrap" id="cloud-wrap">
-        <input class="tag-input" id="cloud-input" placeholder="e.g. AWS, Azure" data-target="cloud_platform">
-      </div>
-    </div>
-    <div class="field">
-      <label>SIEM platform</label>
-      <input type="text" id="siem" placeholder="e.g. Wazuh, Splunk (leave blank if none)">
-    </div>
-  </div>
-
-  <!-- SECTION 4: CPE / SBOM -->
-  <div class="section" id="s4">
-    <div class="section-label">Step 4 of 6</div>
-    <div class="section-title">Asset inventory &amp; CPE list</div>
-    <div class="section-desc">CPE strings are used directly by the relevance scorer to match incoming CVEs against your environment.</div>
-
-    <div class="field">
-      <label>CPE strings</label>
-      <div class="hint">Press Enter after each CPE. Format: cpe:2.3:o:vendor:product:version:…</div>
-      <div class="tag-wrap" id="cpe-wrap">
-        <input class="tag-input" id="cpe-input" placeholder="cpe:2.3:o:canonical:ubuntu_linux:24.04:…" data-target="cpe_list">
-      </div>
-    </div>
-    <div class="field">
-      <label>SBOM maintained?</label>
-      <div class="options-grid">
-        <label class="opt"><input type="radio" name="sbom" value="true"><span>Yes</span></label>
-        <label class="opt"><input type="radio" name="sbom" value="false" checked><span>No</span></label>
-      </div>
-    </div>
-    <div class="field">
-      <label>SBOM notes</label>
-      <textarea id="sbom_notes" placeholder="e.g. Tracked informally via apt list --installed…"></textarea>
-    </div>
-    <div class="field">
-      <label>Asset inventory coverage</label>
-      <select id="coverage">
-        <option value="<50%">&lt;50%</option>
-        <option value="50-75%">50–75%</option>
-        <option value="75-90%">75–90%</option>
-        <option value=">90%">&gt;90%</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- SECTION 5: Security Controls -->
-  <div class="section" id="s5">
-    <div class="section-label">Step 5 of 6</div>
-    <div class="section-title">Security controls</div>
-    <div class="section-desc">Current controls and operational context.</div>
-
-    <div class="row">
-      <div class="field">
-        <label>Backup strategy</label>
-        <select id="backup">
-          <option value="none">None</option>
-          <option value="offline" selected>Offline / manual</option>
-          <option value="cloud">Cloud backup</option>
-          <option value="automated">Automated on-prem</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Zero Trust level</label>
-        <select id="zero_trust">
-          <option value="nascent" selected>Nascent</option>
-          <option value="partial">Partial</option>
-          <option value="implemented">Implemented</option>
-          <option value="mature">Mature</option>
-        </select>
-      </div>
-    </div>
-    <div class="field">
-      <label>Incident response plan in place?</label>
-      <div class="options-grid">
-        <label class="opt"><input type="radio" name="irp" value="true"><span>Yes</span></label>
-        <label class="opt"><input type="radio" name="irp" value="false" checked><span>No</span></label>
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>Encryption at rest?</label>
-        <select id="enc_rest">
-          <option value="false">No</option>
-          <option value="true">Yes</option>
-          <option value="partial">Partial</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Encryption in transit?</label>
-        <select id="enc_transit">
-          <option value="false">No</option>
-          <option value="true" selected>Yes</option>
-          <option value="partial">Partial</option>
-        </select>
-      </div>
-    </div>
-    <div class="field">
-      <label>Internet-facing services?</label>
-      <div class="options-grid">
-        <label class="opt"><input type="radio" name="inet" value="true"><span>Yes</span></label>
-        <label class="opt"><input type="radio" name="inet" value="false" checked><span>No</span></label>
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>RTO (Recovery Time Objective)</label>
-        <input type="text" id="rto" placeholder="e.g. ~15 minutes">
-      </div>
-      <div class="field">
-        <label>RPO (Recovery Point Objective)</label>
-        <input type="text" id="rpo" placeholder="e.g. Last snapshot">
-      </div>
-    </div>
-    <div class="field">
-      <label>Security team size</label>
-      <input type="number" id="sec_team_size" min="0" value="1">
-    </div>
-  </div>
-
-  <!-- SECTION 6: Governance -->
-  <div class="section" id="s6">
-    <div class="section-label">Step 6 of 6</div>
-    <div class="section-title">Governance</div>
-    <div class="section-desc">Profile ownership and review cadence.</div>
-
-    <div class="row">
-      <div class="field">
-        <label>Profile owner <span class="req">*</span></label>
-        <input type="text" id="owner" placeholder="e.g. System Administrator">
-      </div>
-      <div class="field">
-        <label>Review frequency</label>
-        <select id="review_freq">
-          <option value="monthly">Monthly</option>
-          <option value="quarterly" selected>Quarterly</option>
-          <option value="bi-annually">Bi-annually</option>
-          <option value="annually">Annually</option>
-        </select>
-      </div>
-    </div>
-    <div class="field">
-      <label>Recommended improvements</label>
-      <div class="hint">Press Enter after each item</div>
-      <div class="tag-wrap" id="improvements-wrap">
-        <input class="tag-input" id="improvements-input" placeholder="e.g. Enable LUKS full-disk encryption" data-target="improvements">
-      </div>
-    </div>
-    <div class="field">
-      <label>Additional notes</label>
-      <textarea id="extra_notes" placeholder="Any other context relevant to threat intelligence curation…"></textarea>
-    </div>
-  </div>
-
-  <!-- OUTPUT -->
-  <div id="output-section">
-    <div class="section-label">Profile generated</div>
-    <div class="section-title" style="margin-bottom:4px">Your organisation profile JSON</div>
-    <p style="color:var(--muted);font-size:13px;margin-bottom:24px">Copy or download this file and provide it to the CTI pipeline.</p>
-    <div class="output-wrap">
-      <div class="output-hdr">
-        <span id="out-filename">profile.json</span>
-        <button class="copy-btn" onclick="copyJSON()">Copy</button>
-      </div>
-      <pre id="json-output"></pre>
-    </div>
-    <button class="dl-btn" onclick="downloadJSON()">Download JSON</button>
-    <button class="restart-btn" onclick="restart()">Start over</button>
-  </div>
-
-  <!-- Navigation -->
-  <div class="nav" id="nav-bar">
-    <span class="step-info" id="step-label">Step 1 of 6</span>
-    <div class="btn-row">
-      <button class="btn btn-ghost" id="btn-back" onclick="go(-1)" style="display:none">Back</button>
-      <button class="btn btn-primary" id="btn-next" onclick="go(1)">Next</button>
-    </div>
-  </div>
-
-</div>
-
-<script>
-  const TOTAL = 6;
-  let step = 1;
-  const tags = {};
-
-  // Progress bar
-  function renderProgress() {
-    const bar = document.getElementById('progress');
-    bar.innerHTML = '';
-    for (let i = 1; i <= TOTAL; i++) {
-      const s = document.createElement('div');
-      s.className = 'prog-seg' + (i < step ? ' done' : i === step ? ' active' : '');
-      bar.appendChild(s);
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-  }
 
-  // Tag inputs
-  document.querySelectorAll('.tag-input').forEach(input => {
-    const key = input.dataset.target;
-    tags[key] = [];
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ',') {
-        e.preventDefault();
-        const val = input.value.trim();
-        if (val && !tags[key].includes(val)) {
-          tags[key].push(val);
-          renderTag(input.parentElement, key, val, input);
-        }
-        input.value = '';
+    :root {
+      --bg: #0d0f12;
+      --surface: #13161b;
+      --surface2: #1a1e25;
+      --border: #252930;
+      --accent: #00e5a0;
+      --accent-dim: rgba(0, 229, 160, 0.08);
+      --accent-mid: rgba(0, 229, 160, 0.2);
+      --text: #e2e4e8;
+      --muted: #6b7280;
+      --danger: #ff4d6d;
+      --mono: 'IBM Plex Mono', monospace;
+      --sans: 'IBM Plex Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Layout */
+    .shell {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 24px 96px;
+    }
+
+    /* Header */
+    .hdr {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 32px;
+      margin-bottom: 48px;
+    }
+
+    .hdr-tag {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .hdr h1 {
+      font-size: 26px;
+      font-weight: 300;
+      color: var(--text);
+      letter-spacing: -.02em;
+    }
+
+    .hdr p {
+      color: var(--muted);
+      margin-top: 8px;
+      font-size: 13px;
+      max-width: 520px;
+    }
+
+    /* Progress */
+    .progress-bar {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 48px;
+    }
+
+    .prog-seg {
+      flex: 1;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      transition: background .3s;
+    }
+
+    .prog-seg.done {
+      background: var(--accent);
+    }
+
+    .prog-seg.active {
+      background: rgba(0, 229, 160, .4);
+    }
+
+    /* Sections */
+    .section {
+      display: none;
+      animation: fadeUp .25s ease;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
       }
-    });
-  });
 
-  function renderTag(wrap, key, val, input) {
-    const t = document.createElement('span');
-    t.className = 'tag';
-    t.innerHTML = `${val}<button type="button" onclick="removeTag('${key}','${val}',this)">×</button>`;
-    wrap.insertBefore(t, input);
-  }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-  function removeTag(key, val, btn) {
-    tags[key] = tags[key].filter(v => v !== val);
-    btn.parentElement.remove();
-  }
+    .section-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--accent);
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
 
-  // Radio styling
-  document.querySelectorAll('.opt input[type=radio]').forEach(r => {
-    r.addEventListener('change', () => {
-      document.querySelectorAll(`.opt input[name="${r.name}"]`).forEach(o => {
-        o.closest('.opt').classList.toggle('selected', o.checked);
+    .section-title {
+      font-size: 18px;
+      font-weight: 400;
+      margin-bottom: 4px;
+    }
+
+    .section-desc {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 32px;
+    }
+
+    /* Fields */
+    .field {
+      margin-bottom: 24px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .field label .req {
+      color: var(--accent);
+      margin-left: 3px;
+    }
+
+    .field .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input[type=text],
+    input[type=email],
+    input[type=number],
+    select,
+    textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 13px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      outline: none;
+      transition: border-color .2s, background .2s;
+      appearance: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      background: var(--surface2);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    /* Tag input */
+    .tag-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      min-height: 42px;
+      cursor: text;
+      transition: border-color .2s;
+    }
+
+    .tag-wrap:focus-within {
+      border-color: var(--accent);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-mid);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .tag button {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0;
+      opacity: .7;
+    }
+
+    .tag button:hover {
+      opacity: 1;
+    }
+
+    .tag-input {
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 13px;
+      flex: 1;
+      min-width: 120px;
+      padding: 2px 4px;
+    }
+
+    /* Radio / checkbox grid */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px;
+    }
+
+    .opt {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+
+    .opt:hover {
+      border-color: var(--accent-mid);
+    }
+
+    .opt input {
+      accent-color: var(--accent);
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    .opt span {
+      font-size: 13px;
+    }
+
+    .opt.selected {
+      border-color: var(--accent-mid);
+      background: var(--accent-dim);
+    }
+
+    /* Row */
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 560px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Nav */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .step-info {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    button.btn {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px 22px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+
+    button.btn-ghost {
+      background: var(--surface2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    button.btn-ghost:hover {
+      color: var(--text);
+      border-color: var(--muted);
+    }
+
+    button.btn-primary {
+      background: var(--accent);
+      color: #0d0f12;
+    }
+
+    button.btn-primary:hover {
+      opacity: .88;
+    }
+
+    /* Output */
+    #output-section {
+      display: none;
+    }
+
+    #output-section.active {
+      display: block;
+    }
+
+    .output-wrap {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .output-hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    .output-hdr span {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .copy-btn {
+      font-family: var(--mono);
+      font-size: 11px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    pre {
+      padding: 20px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre;
+    }
+
+    .dl-btn {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      text-align: center;
+      background: var(--accent);
+      color: #0d0f12;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .dl-btn:hover {
+      opacity: .88;
+    }
+
+    .restart-btn {
+      display: block;
+      width: 100%;
+      margin-top: 8px;
+      text-align: center;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 13px;
+      padding: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .restart-btn:hover {
+      border-color: var(--muted);
+      color: var(--text);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="shell">
+
+    <div class="hdr">
+      <div class="hdr-tag">CTI Curation Pipeline</div>
+      <h1>Organisation Profile</h1>
+      <p>Please complete this form so that we can accurately filter and score incoming threat intelligence.</p>
+    </div>
+
+    <div class="progress-bar" id="progress"></div>
+
+    <!-- SECTION 1: Organisation -->
+    <div class="section active" id="s1">
+      <div class="section-label">Step 1 of 6</div>
+      <div class="section-title">Organisation</div>
+      <div class="section-desc">Basic details about your organisation.</div>
+
+      <div class="field">
+        <label>Organisation name <span class="req">*</span></label>
+        <input type="text" id="org_name" placeholder="e.g. Acme Security Lab">
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>NAICS code</label>
+          <div class="hint">Industry classification code</div>
+          <input type="text" id="naics_code" placeholder="e.g. 5415">
+        </div>
+        <div class="field">
+          <label>Organisation size</label>
+          <select id="org_size">
+            <option value="">Select…</option>
+            <option value="startup">Startup (&lt;10)</option>
+            <option value="small">Small (10–49)</option>
+            <option value="medium">Medium (50–249)</option>
+            <option value="large">Large (250+)</option>
+            <option value="enterprise">Enterprise (1000+)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Primary headquarters</label>
+        <input type="text" id="hq" placeholder="e.g. Adelaide, South Australia, Australia">
+      </div>
+      <div class="field">
+        <label>Jurisdiction(s)</label>
+        <div class="hint">Press Enter after each country code</div>
+        <div class="tag-wrap" id="jurisdiction-wrap">
+          <input class="tag-input" id="jurisdiction-input" placeholder="e.g. AU" data-target="jurisdiction">
+        </div>
+      </div>
+      <div class="field">
+        <label>Critical business functions</label>
+        <div class="hint">Press Enter after each function</div>
+        <div class="tag-wrap" id="cbf-wrap">
+          <input class="tag-input" id="cbf-input" placeholder="e.g. Security research" data-target="cbf">
+        </div>
+      </div>
+      <div class="field">
+        <label>Regulatory frameworks</label>
+        <div class="hint">Press Enter after each framework</div>
+        <div class="tag-wrap" id="reg-wrap">
+          <input class="tag-input" id="reg-input" placeholder="e.g. ISO 27001" data-target="reg">
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: Risk Profile -->
+    <div class="section" id="s2">
+      <div class="section-label">Step 2 of 6</div>
+      <div class="section-title">Risk profile</div>
+      <div class="section-desc">Define your organisation's risk posture and alert preferences.</div>
+
+      <div class="field">
+        <label>Severity threshold <span class="req">*</span></label>
+        <div class="hint">Minimum severity level for CTI alerts</div>
+        <div class="options-grid">
+          <label class="opt"><input type="radio" name="severity" value="low"><span>Low</span></label>
+          <label class="opt"><input type="radio" name="severity" value="medium" checked><span>Medium</span></label>
+          <label class="opt"><input type="radio" name="severity" value="high"><span>High</span></label>
+          <label class="opt"><input type="radio" name="severity" value="critical"><span>Critical only</span></label>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Security maturity level</label>
+          <select id="maturity">
+            <option value="nascent">Nascent</option>
+            <option value="developing" selected>Developing</option>
+            <option value="defined">Defined</option>
+            <option value="managed">Managed</option>
+            <option value="optimising">Optimising</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Risk tolerance</label>
+          <select id="risk_tolerance">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Preferred alert volume</label>
+        <div class="options-grid">
+          <label class="opt"><input type="radio" name="alert_vol" value="low" checked><span>Low — curated
+              only</span></label>
+          <label class="opt"><input type="radio" name="alert_vol" value="medium"><span>Medium</span></label>
+          <label class="opt"><input type="radio" name="alert_vol" value="high"><span>High — all relevant</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Priority asset classes</label>
+        <div class="hint">Press Enter after each asset</div>
+        <div class="tag-wrap" id="assets-wrap">
+          <input class="tag-input" id="assets-input" placeholder="e.g. Ubuntu 24.04 LTS VM" data-target="assets">
+        </div>
+      </div>
+      <div class="field">
+        <label>Threat notes</label>
+        <div class="hint">Known risk vectors, threat actors, or concerns</div>
+        <textarea id="threat_notes"
+          placeholder="e.g. Primary risk vectors are misconfiguration and unpatched software…"></textarea>
+      </div>
+    </div>
+
+    <!-- SECTION 3: Technology Stack -->
+    <div class="section" id="s3">
+      <div class="section-label">Step 3 of 6</div>
+      <div class="section-title">Technology stack</div>
+      <div class="section-desc">Endpoint, virtualisation, identity, and network details.</div>
+
+      <div class="row">
+        <div class="field">
+          <label>Workstation OS(es)</label>
+          <div class="hint">Press Enter after each</div>
+          <div class="tag-wrap" id="os-work-wrap">
+            <input class="tag-input" id="os-work-input" placeholder="e.g. Windows 11" data-target="os_workstation">
+          </div>
+        </div>
+        <div class="field">
+          <label>Server OS(es)</label>
+          <div class="hint">Press Enter after each</div>
+          <div class="tag-wrap" id="os-srv-wrap">
+            <input class="tag-input" id="os-srv-input" placeholder="e.g. Ubuntu 24.04 LTS" data-target="os_server">
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Hypervisor</label>
+          <input type="text" id="hypervisor" placeholder="e.g. Oracle VirtualBox 7.x">
+        </div>
+        <div class="field">
+          <label>Hypervisor type</label>
+          <select id="hypervisor_type">
+            <option value="">Select…</option>
+            <option value="Type-1">Type-1 (bare metal)</option>
+            <option value="Type-2">Type-2 (hosted)</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Firewall vendor(s)</label>
+          <div class="hint">Press Enter after each</div>
+          <div class="tag-wrap" id="fw-wrap">
+            <input class="tag-input" id="fw-input" placeholder="e.g. UFW" data-target="firewall_vendor">
+          </div>
+        </div>
+        <div class="field">
+          <label>Network segmentation</label>
+          <select id="net_seg">
+            <option value="none">None</option>
+            <option value="basic" selected>Basic</option>
+            <option value="vlan">VLAN segmented</option>
+            <option value="microsegmented">Microsegmented</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Cloud platforms</label>
+        <div class="hint">Leave empty if not applicable</div>
+        <div class="tag-wrap" id="cloud-wrap">
+          <input class="tag-input" id="cloud-input" placeholder="e.g. AWS, Azure" data-target="cloud_platform">
+        </div>
+      </div>
+      <div class="field">
+        <label>SIEM platform</label>
+        <input type="text" id="siem" placeholder="e.g. Wazuh, Splunk (leave blank if none)">
+      </div>
+    </div>
+
+    <!-- SECTION 4: CPE / SBOM -->
+    <div class="section" id="s4">
+      <div class="section-label">Step 4 of 6</div>
+      <div class="section-title">Asset inventory &amp; CPE list</div>
+      <div class="section-desc">CPE strings are used directly by the relevance scorer to match incoming CVEs against
+        your environment.</div>
+
+      <div class="field">
+        <label>CPE strings</label>
+        <div class="hint">Press Enter after each CPE. Format: cpe:2.3:o:vendor:product:version:…</div>
+        <div class="tag-wrap" id="cpe-wrap">
+          <input class="tag-input" id="cpe-input" placeholder="cpe:2.3:o:canonical:ubuntu_linux:24.04:…"
+            data-target="cpe_list">
+        </div>
+      </div>
+      <div class="field">
+        <label>SBOM maintained?</label>
+        <div class="options-grid">
+          <label class="opt"><input type="radio" name="sbom" value="true"><span>Yes</span></label>
+          <label class="opt"><input type="radio" name="sbom" value="false" checked><span>No</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label>SBOM notes</label>
+        <textarea id="sbom_notes" placeholder="e.g. Tracked informally via apt list --installed…"></textarea>
+      </div>
+      <div class="field">
+        <label>Asset inventory coverage</label>
+        <select id="coverage">
+          <option value="<50%">&lt;50%</option>
+          <option value="50-75%">50–75%</option>
+          <option value="75-90%">75–90%</option>
+          <option value=">90%">&gt;90%</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- SECTION 5: Security Controls -->
+    <div class="section" id="s5">
+      <div class="section-label">Step 5 of 6</div>
+      <div class="section-title">Security controls</div>
+      <div class="section-desc">Current controls and operational context.</div>
+
+      <div class="row">
+        <div class="field">
+          <label>Backup strategy</label>
+          <select id="backup">
+            <option value="none">None</option>
+            <option value="offline" selected>Offline / manual</option>
+            <option value="cloud">Cloud backup</option>
+            <option value="automated">Automated on-prem</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Zero Trust level</label>
+          <select id="zero_trust">
+            <option value="nascent" selected>Nascent</option>
+            <option value="partial">Partial</option>
+            <option value="implemented">Implemented</option>
+            <option value="mature">Mature</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Incident response plan in place?</label>
+        <div class="options-grid">
+          <label class="opt"><input type="radio" name="irp" value="true"><span>Yes</span></label>
+          <label class="opt"><input type="radio" name="irp" value="false" checked><span>No</span></label>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Encryption at rest?</label>
+          <select id="enc_rest">
+            <option value="false">No</option>
+            <option value="true">Yes</option>
+            <option value="partial">Partial</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Encryption in transit?</label>
+          <select id="enc_transit">
+            <option value="false">No</option>
+            <option value="true" selected>Yes</option>
+            <option value="partial">Partial</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Internet-facing services?</label>
+        <div class="options-grid">
+          <label class="opt"><input type="radio" name="inet" value="true"><span>Yes</span></label>
+          <label class="opt"><input type="radio" name="inet" value="false" checked><span>No</span></label>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>RTO (Recovery Time Objective)</label>
+          <input type="text" id="rto" placeholder="e.g. ~15 minutes">
+        </div>
+        <div class="field">
+          <label>RPO (Recovery Point Objective)</label>
+          <input type="text" id="rpo" placeholder="e.g. Last snapshot">
+        </div>
+      </div>
+      <div class="field">
+        <label>Security team size</label>
+        <input type="number" id="sec_team_size" min="0" value="1">
+      </div>
+    </div>
+
+    <!-- SECTION 6: Governance -->
+    <div class="section" id="s6">
+      <div class="section-label">Step 6 of 6</div>
+      <div class="section-title">Governance</div>
+      <div class="section-desc">Profile ownership and review cadence.</div>
+
+      <div class="row">
+        <div class="field">
+          <label>Profile owner <span class="req">*</span></label>
+          <input type="text" id="owner" placeholder="e.g. System Administrator">
+        </div>
+        <div class="field">
+          <label>Review frequency</label>
+          <select id="review_freq">
+            <option value="monthly">Monthly</option>
+            <option value="quarterly" selected>Quarterly</option>
+            <option value="bi-annually">Bi-annually</option>
+            <option value="annually">Annually</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Recommended improvements</label>
+        <div class="hint">Press Enter after each item</div>
+        <div class="tag-wrap" id="improvements-wrap">
+          <input class="tag-input" id="improvements-input" placeholder="e.g. Enable LUKS full-disk encryption"
+            data-target="improvements">
+        </div>
+      </div>
+      <div class="field">
+        <label>Additional notes</label>
+        <textarea id="extra_notes" placeholder="Any other context relevant to threat intelligence curation…"></textarea>
+      </div>
+    </div>
+
+    <!-- OUTPUT -->
+    <div id="output-section">
+      <div class="section-label">Profile generated</div>
+      <div class="section-title" style="margin-bottom:4px">Your organisation profile JSON</div>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:24px">Copy or download this file and provide it to the
+        CTI pipeline.</p>
+      <div class="output-wrap">
+        <div class="output-hdr">
+          <span id="out-filename">profile.json</span>
+          <button class="copy-btn" onclick="copyJSON()">Copy</button>
+        </div>
+        <pre id="json-output"></pre>
+      </div>
+      <button class="dl-btn" onclick="downloadJSON()">Download JSON</button>
+      <button class="restart-btn" onclick="restart()">Start over</button>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav" id="nav-bar">
+      <span class="step-info" id="step-label">Step 1 of 6</span>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="btn-back" onclick="go(-1)" style="display:none">Back</button>
+        <button class="btn btn-primary" id="btn-next" onclick="go(1)">Next</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const TOTAL = 6;
+    let step = 1;
+    const tags = {};
+
+    // Progress bar
+    function renderProgress() {
+      const bar = document.getElementById('progress');
+      bar.innerHTML = '';
+      for (let i = 1; i <= TOTAL; i++) {
+        const s = document.createElement('div');
+        s.className = 'prog-seg' + (i < step ? ' done' : i === step ? ' active' : '');
+        bar.appendChild(s);
+      }
+    }
+
+    // Tag inputs
+    document.querySelectorAll('.tag-input').forEach(input => {
+      const key = input.dataset.target;
+      tags[key] = [];
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          const val = input.value.trim();
+          if (val && !tags[key].includes(val)) {
+            tags[key].push(val);
+            renderTag(input.parentElement, key, val, input);
+          }
+          input.value = '';
+        }
       });
     });
-  });
 
-  // Nav
-  function go(dir) {
-    if (dir === 1 && step === TOTAL) { generate(); return; }
-    const next = step + dir;
-    if (next < 1 || next > TOTAL) return;
-    document.getElementById(`s${step}`).classList.remove('active');
-    step = next;
-    document.getElementById(`s${step}`).classList.add('active');
-    document.getElementById('btn-back').style.display = step > 1 ? 'inline-flex' : 'none';
-    document.getElementById('btn-next').textContent = step === TOTAL ? 'Generate JSON' : 'Next';
-    document.getElementById('step-label').textContent = `Step ${step} of ${TOTAL}`;
-    renderProgress();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+    function renderTag(wrap, key, val, input) {
+      const t = document.createElement('span');
+      t.className = 'tag';
+      t.innerHTML = `${val}<button type="button" onclick="removeTag('${key}','${val}',this)">×</button>`;
+      wrap.insertBefore(t, input);
+    }
 
-  function getRadio(name) {
-    const el = document.querySelector(`input[name="${name}"]:checked`);
-    return el ? el.value : null;
-  }
+    function removeTag(key, val, btn) {
+      tags[key] = tags[key].filter(v => v !== val);
+      btn.parentElement.remove();
+    }
 
-  function bool(v) { return v === 'true' ? true : v === 'false' ? false : v; }
+    // Radio styling
+    document.querySelectorAll('.opt input[type=radio]').forEach(r => {
+      r.addEventListener('change', () => {
+        document.querySelectorAll(`.opt input[name="${r.name}"]`).forEach(o => {
+          o.closest('.opt').classList.toggle('selected', o.checked);
+        });
+      });
+    });
 
-  // Generate JSON
-  async function generate() {
-    const now = new Date().toISOString();
-    const orgName = document.getElementById('org_name').value.trim() || 'Unknown Organisation';
-    const slug = orgName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    // Nav
+    function go(dir) {
+      if (dir === 1 && step === TOTAL) { generate(); return; }
+      const next = step + dir;
+      if (next < 1 || next > TOTAL) return;
+      document.getElementById(`s${step}`).classList.remove('active');
+      step = next;
+      document.getElementById(`s${step}`).classList.add('active');
+      document.getElementById('btn-back').style.display = step > 1 ? 'inline-flex' : 'none';
+      document.getElementById('btn-next').textContent = step === TOTAL ? 'Generate JSON' : 'Next';
+      document.getElementById('step-label').textContent = `Step ${step} of ${TOTAL}`;
+      renderProgress();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
-    const profile = {
-      profile_id: `profile-${slug}-${Date.now()}`,
-      profile_version: "1.0",
-      created: now,
-      modified: now,
-      organisation: {
-        name: orgName,
-        naics_code: document.getElementById('naics_code').value.trim(),
-        size: document.getElementById('org_size').value,
-        jurisdiction: tags['jurisdiction'] || [],
-        primary_headquarters: document.getElementById('hq').value.trim(),
-        critical_business_functions: tags['cbf'] || [],
-        regulatory_frameworks: tags['reg'] || []
-      },
-      risk_profile: {
-        severity_threshold: getRadio('severity'),
-        maturity_level: document.getElementById('maturity').value,
-        risk_tolerance: document.getElementById('risk_tolerance').value,
-        alert_volume: getRadio('alert_vol'),
-        priority_asset_classes: tags['assets'] || [],
-        threat_notes: document.getElementById('threat_notes').value.trim()
-      },
-      technology_stack: {
-        endpoint: {
-          os_workstation: tags['os_workstation'] || [],
-          os_server: tags['os_server'] || []
+    function getRadio(name) {
+      const el = document.querySelector(`input[name="${name}"]:checked`);
+      return el ? el.value : null;
+    }
+
+    function bool(v) { return v === 'true' ? true : v === 'false' ? false : v; }
+
+    // Generate JSON
+    async function generate() {
+      const now = new Date().toISOString();
+      const orgName = document.getElementById('org_name').value.trim() || 'Unknown Organisation';
+      const slug = orgName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+      const profile = {
+        profile_id: `profile-${slug}-${Date.now()}`,
+        profile_version: "1.0",
+        created: now,
+        modified: now,
+        organisation: {
+          name: orgName,
+          naics_code: document.getElementById('naics_code').value.trim(),
+          size: document.getElementById('org_size').value,
+          jurisdiction: tags['jurisdiction'] || [],
+          primary_headquarters: document.getElementById('hq').value.trim(),
+          critical_business_functions: tags['cbf'] || [],
+          regulatory_frameworks: tags['reg'] || []
         },
-        virtualisation: {
-          hypervisor: document.getElementById('hypervisor').value.trim(),
-          hypervisor_type: document.getElementById('hypervisor_type').value
+        risk_profile: {
+          severity_threshold: getRadio('severity'),
+          maturity_level: document.getElementById('maturity').value,
+          risk_tolerance: document.getElementById('risk_tolerance').value,
+          alert_volume: getRadio('alert_vol'),
+          priority_asset_classes: tags['assets'] || [],
+          threat_notes: document.getElementById('threat_notes').value.trim()
         },
-        network: {
-          firewall_vendor: tags['firewall_vendor'] || [],
-          network_segmentation: document.getElementById('net_seg').value
+        technology_stack: {
+          endpoint: {
+            os_workstation: tags['os_workstation'] || [],
+            os_server: tags['os_server'] || []
+          },
+          virtualisation: {
+            hypervisor: document.getElementById('hypervisor').value.trim(),
+            hypervisor_type: document.getElementById('hypervisor_type').value
+          },
+          network: {
+            firewall_vendor: tags['firewall_vendor'] || [],
+            network_segmentation: document.getElementById('net_seg').value
+          },
+          cloud: {
+            cloud_platform: tags['cloud_platform'] || [],
+            cloud_native: (tags['cloud_platform'] || []).length > 0
+          },
+          security_operations: {
+            siem_platform: document.getElementById('siem').value.trim()
+              ? [document.getElementById('siem').value.trim()] : []
+          }
         },
-        cloud: {
-          cloud_platform: tags['cloud_platform'] || [],
-          cloud_native: (tags['cloud_platform'] || []).length > 0
+        cpe_list: tags['cpe_list'] || [],
+        sbom_reference: {
+          maintained: bool(getRadio('sbom')),
+          notes: document.getElementById('sbom_notes').value.trim()
         },
-        security_operations: {
-          siem_platform: document.getElementById('siem').value.trim()
-            ? [document.getElementById('siem').value.trim()] : []
+        asset_exposure: {
+          asset_inventory_coverage: document.getElementById('coverage').value
+        },
+        security_controls: {
+          backup_strategy: document.getElementById('backup').value,
+          zero_trust_level: document.getElementById('zero_trust').value,
+          incident_response_plan: bool(getRadio('irp')),
+          encryption_at_rest: bool(document.getElementById('enc_rest').value),
+          encryption_in_transit: bool(document.getElementById('enc_transit').value)
+        },
+        attack_surface: {
+          internet_facing: bool(getRadio('inet'))
+        },
+        operational_context: {
+          rto: document.getElementById('rto').value.trim(),
+          rpo: document.getElementById('rpo').value.trim(),
+          security_team_size: parseInt(document.getElementById('sec_team_size').value) || 1
+        },
+        governance: {
+          profile_owner: document.getElementById('owner').value.trim(),
+          review_frequency: document.getElementById('review_freq').value,
+          profile_date: now.split('T')[0]
+        },
+        recommended_improvements: tags['improvements'] || [],
+        notes: document.getElementById('extra_notes').value.trim()
+      };
+
+      const json = JSON.stringify(profile, null, 2);
+      document.getElementById('json-output').textContent = json;
+      document.getElementById('out-filename').textContent = `${slug}-profile.json`;
+      await send_profile(json);
+
+      // Hide form, show output
+      for (let i = 1; i <= TOTAL; i++) document.getElementById(`s${i}`).classList.remove('active');
+      document.getElementById('nav-bar').style.display = 'none';
+      document.getElementById('progress').style.display = 'none';
+      document.getElementById('output-section').classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function copyJSON() {
+      navigator.clipboard.writeText(document.getElementById('json-output').textContent);
+      document.querySelector('.copy-btn').textContent = 'Copied!';
+      setTimeout(() => document.querySelector('.copy-btn').textContent = 'Copy', 1500);
+    }
+
+    function downloadJSON() {
+      const fname = document.getElementById('out-filename').textContent;
+      const blob = new Blob([document.getElementById('json-output').textContent], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = fname; a.click();
+    }
+
+    async function send_profile(profileJSON) {
+      try {
+        const response = await fetch("http://127.0.0.1:8000/submit-profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: profileJSON  // already a JSON string, send directly
+        });
+        const result = await response.json();
+        if (result.status === "ok") {
+          console.log("[*] Profile submitted successfully.");
+        } else {
+          console.error("[!] Failed to submit profile:", result);
         }
-      },
-      cpe_list: tags['cpe_list'] || [],
-      sbom_reference: {
-        maintained: bool(getRadio('sbom')),
-        notes: document.getElementById('sbom_notes').value.trim()
-      },
-      asset_exposure: {
-        asset_inventory_coverage: document.getElementById('coverage').value
-      },
-      security_controls: {
-        backup_strategy: document.getElementById('backup').value,
-        zero_trust_level: document.getElementById('zero_trust').value,
-        incident_response_plan: bool(getRadio('irp')),
-        encryption_at_rest: bool(document.getElementById('enc_rest').value),
-        encryption_in_transit: bool(document.getElementById('enc_transit').value)
-      },
-      attack_surface: {
-        internet_facing: bool(getRadio('inet'))
-      },
-      operational_context: {
-        rto: document.getElementById('rto').value.trim(),
-        rpo: document.getElementById('rpo').value.trim(),
-        security_team_size: parseInt(document.getElementById('sec_team_size').value) || 1
-      },
-      governance: {
-        profile_owner: document.getElementById('owner').value.trim(),
-        review_frequency: document.getElementById('review_freq').value,
-        profile_date: now.split('T')[0]
-      },
-      recommended_improvements: tags['improvements'] || [],
-      notes: document.getElementById('extra_notes').value.trim()
-    };
+      } catch (err) {
+        console.error("[!] Error submitting profile:", err);
+      }
+    }
 
-    const json = JSON.stringify(profile, null, 2);
-    document.getElementById('json-output').textContent = json;
-    document.getElementById('out-filename').textContent = `${slug}-profile.json`;
-    await sendProfileByEmail(json);
+    function restart() {
+      location.reload();
+    }
 
-    // Hide form, show output
-    for (let i = 1; i <= TOTAL; i++) document.getElementById(`s${i}`).classList.remove('active');
-    document.getElementById('nav-bar').style.display = 'none';
-    document.getElementById('progress').style.display = 'none';
-    document.getElementById('output-section').classList.add('active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function copyJSON() {
-    navigator.clipboard.writeText(document.getElementById('json-output').textContent);
-    document.querySelector('.copy-btn').textContent = 'Copied!';
-    setTimeout(() => document.querySelector('.copy-btn').textContent = 'Copy', 1500);
-  }
-
-  function downloadJSON() {
-    const fname = document.getElementById('out-filename').textContent;
-    const blob = new Blob([document.getElementById('json-output').textContent], { type: 'application/json' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = fname; a.click();
-  }
-
-  async function sendProfileByEmail(profileJSON) {
-  const response = await fetch("https://api.web3forms.com/submit", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      access_key: "890f7bfd-ed97-4d5c-ba2e-564de331d8a8",
-      subject: "New CTI Organisation Profile Submitted",
-      from_name: "CTI Profile Form",
-      message: profileJSON
-    })
-  });
-
-  const result = await response.json();
-  if (result.success) {
-    console.log("[*] Profile sent successfully.");
-  } else {
-    console.error("[!] Failed to send profile:", result);
-  }
-  }
-
-  function restart() {
-    location.reload();
-  }
-
-  renderProgress();
-</script>
+    renderProgress();
+  </script>
 </body>
+
 </html>

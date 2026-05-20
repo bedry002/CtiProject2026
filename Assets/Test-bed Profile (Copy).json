@@ -9,7 +9,9 @@
     "naics_label": "Computer Systems Design and Related Services",
     "isic_code": "6209",
     "size": "startup",
-    "jurisdiction": ["AU"],
+    "jurisdiction": [
+      "AU"
+    ],
     "primary_headquarters": "Adelaide, South Australia, Australia",
     "critical_business_functions": [
       "Security research and vulnerability analysis",
@@ -17,7 +19,9 @@
       "System administration skills development",
       "Ubuntu server hardening and configuration testing"
     ],
-    "regulatory_frameworks": ["Internal security policy / ad-hoc research governance"]
+    "regulatory_frameworks": [
+      "Internal security policy / ad-hoc research governance"
+    ]
   },
   "risk_profile": {
     "severity_threshold": "medium",
@@ -36,8 +40,12 @@
   },
   "technology_stack": {
     "endpoint": {
-      "os_workstation": ["Windows 11"],
-      "os_server": ["Ubuntu 24.04 LTS"],
+      "os_workstation": [
+        "Windows 11"
+      ],
+      "os_server": [
+        "Ubuntu 24.04 LTS"
+      ],
       "edr_solution": [],
       "edr_recommendation": "Wazuh (open source) or Microsoft Defender for Linux",
       "device_management": "None – standalone test-bed, no MDM",
@@ -52,17 +60,25 @@
       "snapshot_policy": "Ad-hoc snapshots before configuration changes; exported OVA stored on USB"
     },
     "identity": {
-      "directory_service": ["Local user accounts only"],
+      "directory_service": [
+        "Local user accounts only"
+      ],
       "mfa_solution": [],
       "mfa_recommendation": "TOTP via Google Authenticator or similar for SSH access",
-      "pam_solution": ["sudo (Linux native)", "Local Administrator (Windows 11 host)"],
+      "pam_solution": [
+        "sudo (Linux native)",
+        "Local Administrator (Windows 11 host)"
+      ],
       "identity_federation": "N/A",
       "password_policy": "Basic – /etc/security/pwquality.conf on Ubuntu; Windows 11 local policy defaults",
       "passwordless_auth": false,
       "passwordless_recommendation": "SSH key-based authentication recommended"
     },
     "network": {
-      "firewall_vendor": ["UFW (Ubuntu guest)", "Windows Defender Firewall (Windows 11 host)"],
+      "firewall_vendor": [
+        "UFW (Ubuntu guest)",
+        "Windows Defender Firewall (Windows 11 host)"
+      ],
       "vpn_solution": [],
       "network_monitoring": [],
       "network_monitoring_recommendation": "tcpdump or Zeek for test-bed traffic analysis",
@@ -160,7 +176,9 @@
     "mttr": "Not formally measured. VM snapshot rollback estimated <15 minutes."
   },
   "data_classification": {
-    "sensitive_data_types": ["test/synthetic data only"],
+    "sensitive_data_types": [
+      "test/synthetic data only"
+    ],
     "data_classification_scheme": false,
     "classification_recommendation": "3-tier scheme: Public / Internal / Confidential applied to scripts, configs, and documentation.",
     "encryption_at_rest": false,

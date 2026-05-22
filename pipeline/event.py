@@ -33,6 +33,10 @@ class CurationEvent:
     score_breakdown: dict[str, float] = field(default_factory=dict)
     ioc_summary: dict[str, int] = field(default_factory=dict)   # attr_type → count
 
+    # Populated by LLM enricher stage
+    analyst_summary: str | None = None
+    implicit_relevance_flags: list[str] = field(default_factory=list)
+
     def __repr__(self) -> str:
         return (
             f"CurationEvent(id={self.misp_id!r}, "

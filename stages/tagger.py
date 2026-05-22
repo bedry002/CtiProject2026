@@ -138,6 +138,41 @@ class MISPTaggerStage(Stage):
         except Exception as e:
             logger.error("Failed to write score attribute to event %s: %s", event_uuid, e)
 
+    def _upsert_analyst_summary_attribute(self, event_uuid: str, event: CurationEvent) -> None:
+        """Write the LLM analyst summary as a text attribute on the event.
+
+        Mirrors _upsert_score_attribute: deletes any prior curation-summary
+        attribute before writing a fresh one, so re-runs update in place.
+        """
+        if not event.analyst_summary:
+            return
+        lines = [event.analyst_summary]
+        if event.implicit_relevance_flags:
+            lines.append("Flags: " + "; ".join(event.implicit_relevance_flags))
+        value = "\n".join(lines)
+
+        try:
+            misp_event = self.client.get_event(event_uuid, pythonify=True)
+            for attr in misp_event.attributes:
+                if getattr(attr, "comment", "") == "curation-summary":
+                    self.client.delete_attribute(attr.id)
+                    logger.debug("Deleted old curation summary attribute from event %s", event_uuid)
+
+            attr = MISPAttribute()
+            attr.from_dict(
+                type="text",
+                category="External analysis",
+                value=value,
+                comment="curation-summary",
+                to_ids=False,
+                distribution=0,
+            )
+            self.client.add_attribute(event_uuid, attr)
+            logger.debug("Added curation summary attribute to event %s", event_uuid)
+
+        except Exception as e:
+            logger.error("Failed to write summary attribute to event %s: %s", event_uuid, e)
+
     def process(self, event: CurationEvent) -> CurationEvent:
         if event.confidence is None:
             logger.warning("Event %s has no confidence score, skipping tagger", event.misp_id)
@@ -152,6 +187,11 @@ class MISPTaggerStage(Stage):
                 event.misp_id, event.confidence, tag,
                 ", ".join(f"{k}={v:.3f}" for k, v in event.score_breakdown.items()),
             )
+            if event.analyst_summary:
+                logger.info(
+                    "[dry-run] Would write analyst summary to event %s: %s",
+                    event.misp_id, event.analyst_summary[:120],
+                )
             if not is_relevant:
                 logger.info(
                     "[dry-run] Event %s would be excluded from curated feed",
@@ -171,6 +211,7 @@ class MISPTaggerStage(Stage):
                 self.client.tag(uuid, "feed:curated")
 
             self._upsert_score_attribute(uuid, event)
+            self._upsert_analyst_summary_attribute(uuid, event)
 
             logger.debug(
                 "Tagged event %s → %s (confidence=%.4f)",

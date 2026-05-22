@@ -16,11 +16,12 @@ from pymisp import PyMISP
 from stages.ingest import MISPIngestStage
 from stages.ner import NERStage
 from stages.scoring import ScoringStage
+from stages.llm_enricher import LLMEnricherStage
 from stages.report import ReportStage
 from stages.tagger import MISPTaggerStage
 from config import (
     MISP_URL, MISP_KEY, MISP_VERIFYCERT,
-    BUSINESS_PROFILE, SBOM_PROFILE, CONFIDENCE_THRESHOLD,
+    BUSINESS_PROFILE, SBOM_PROFILE, RAW_PROFILE, CONFIDENCE_THRESHOLD,
     PIPELINE_CONTINUE_ON_STAGE_ERROR,
     POLL_INTERVAL_SECONDS, POLL_STATE_PATH,
 )
@@ -47,10 +48,22 @@ def _save_last_seen(timestamp: int) -> None:
     _STATE_FILE.write_text(str(timestamp), encoding="utf-8")
 
 
+_LLM_PROFILE_CTX = {
+    "sectors": BUSINESS_PROFILE.sectors,
+    "technologies": BUSINESS_PROFILE.technologies,
+    "threat_actor_watchlist": RAW_PROFILE.get("threat_actor_watch_list", []),
+    "component_versions": {
+        c.bom_ref: {"name": c.name, "version": c.version, "criticality": c.criticality}
+        for c in (SBOM_PROFILE.components if SBOM_PROFILE else [])
+    },
+}
+
+
 def build_pipeline(misp_client: PyMISP) -> Pipeline:
     return Pipeline([
         NERStage(),
-        ScoringStage(BUSINESS_PROFILE, SBOM_PROFILE),
+        ScoringStage(BUSINESS_PROFILE, SBOM_PROFILE, threshold=CONFIDENCE_THRESHOLD),
+        LLMEnricherStage(profile_context=_LLM_PROFILE_CTX,min_confidence=CONFIDENCE_THRESHOLD,),
         MISPTaggerStage(misp_client, dry_run=TAGGER_DRY_RUN),
         ReportStage(REPORT_PATH, threshold=CONFIDENCE_THRESHOLD),
     ], continue_on_stage_error=PIPELINE_CONTINUE_ON_STAGE_ERROR)

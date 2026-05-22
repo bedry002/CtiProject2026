@@ -108,6 +108,7 @@ def _load_business_profile(path: pathlib.Path) -> BusinessProfile:
     )
 
 
+RAW_PROFILE      = json.loads(_PROFILE_PATH.read_text(encoding="utf-8"))
 SBOM_PROFILE     = load_sbom(_SBOM_PATH)
 BUSINESS_PROFILE = _load_business_profile(_PROFILE_PATH)
 
@@ -116,8 +117,8 @@ BUSINESS_PROFILE = _load_business_profile(_PROFILE_PATH)
 # These are far more discriminating than single-word generic keywords.
 BUSINESS_PROFILE.specific_keywords = SBOM_PROFILE.specific_threat_phrases()
 
-# Confidence threshold for "relevant" — on the new 0–1 scale
-CONFIDENCE_THRESHOLD = 0.10
+# Confidence threshold 
+CONFIDENCE_THRESHOLD = 0.20
 
 # Polling loop
 POLL_INTERVAL_SECONDS = int(os.getenv("POLL_INTERVAL_SECONDS", "30"))

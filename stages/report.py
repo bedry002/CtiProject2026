@@ -73,11 +73,10 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
             if bd.get("sbom_cve", 0) > 0 else ""
         )
         breakdown_html = (
-            f'<span title="SBOM text match (sbom_cve={bd.get("sbom_cve",0):.2f})">S:{bd.get("sbom",0):.2f}{cve_badge}</span> '
-            f'<span title="Keyword phrases">K:{bd.get("keyword",0):.2f}</span> '
-            f'<span title="IOC analysis">I:{bd.get("ioc",0):.2f}</span> '
-            f'<span title="Technology">T:{bd.get("tech",0):.2f}</span> '
-            f'<span title="Context">C:{bd.get("context",0):.2f}</span>'
+            f'<span title="SBOM component + keyword match (sbom_cve={bd.get("sbom_cve",0):.2f})">Asset:{bd.get("asset",0):.2f}{cve_badge}</span> '
+            f'<span title="Technology stack">Tech:{bd.get("tech",0):.2f}</span> '
+            f'<span title="Sector alignment">Sec:{bd.get("sector",0):.2f}</span> '
+            f'<span title="Geography">Geo:{bd.get("geography",0):.2f}</span>'
         ) if bd else ""
         ioc = e.ioc_summary
         total_iocs = sum(ioc.values())
@@ -93,6 +92,21 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
             ", ".join(f'<code style="font-size:0.78em">{r}</code>' for r in e.matched_sbom_components)
             or "<em style='color:#6c757d'>none</em>"
         )
+        summary_row = ""
+        if getattr(e, "analyst_summary", None):
+            flags = getattr(e, "implicit_relevance_flags", [])
+            flags_html = (
+                f'<br><small style="color:#6c757d">Flags: {"; ".join(flags)}</small>'
+                if flags else ""
+            )
+            summary_row = (
+                f'<tr style="background:{bg}">'
+                f'<td colspan="9" style="border-left:3px solid #d4a017;padding:5px 14px 8px">'
+                f'<b style="color:#856404;font-size:0.82em">&#x1F9E0; Analyst Summary</b>'
+                f'<p style="margin:3px 0;font-size:0.88em">{e.analyst_summary}</p>'
+                f'{flags_html}'
+                f'</td></tr>'
+            )
         rows.append(f"""
         <tr style="background:{bg}">
           <td style="color:{fg};font-weight:bold;white-space:nowrap">{label.upper()}</td>
@@ -108,7 +122,7 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
           <td style="font-size:0.82em">{sbom_html}</td>
           <td style="font-size:0.82em">{', '.join(e.matched_profile_terms)}</td>
           <td style="font-size:0.82em">{_entity_pills(e.entities)}</td>
-        </tr>""")
+        </tr>{summary_row}""")
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -149,7 +163,7 @@ Confidence threshold: {threshold}</p>
 <thead>
   <tr>
     <th>Band</th><th>Event ID</th><th>Date</th><th>Info</th>
-    <th>Confidence<br><small style="font-weight:normal">S=SBOM K=Kw I=IOC T=Tech C=Ctx</small></th>
+    <th>Confidence<br><small style="font-weight:normal">Asset=SBOM+Kw Tech=Stack Sec=Sector Geo=Geo</small></th>
     <th>IOCs</th><th>SBOM Hits</th><th>Matched Terms</th><th>NER Entities</th>
   </tr>
 </thead>

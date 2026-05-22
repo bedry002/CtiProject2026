@@ -1,0 +1,15 @@
+pymisp>=2.4
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Core ML stack (required for BERTopic)
+numpy
+scipy
+pandas
+scikit-learn
+
+# BERTopic dependencies
+bertopic
+sentence-transformers
+umap-learn
+hdbscan

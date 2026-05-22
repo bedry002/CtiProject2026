@@ -12,7 +12,6 @@ LLM_MODEL          : Model name.
 LLM_TEMPERATURE    : Sampling temperature (default 0.4).
 LLM_MAX_TOKENS     : Max tokens in the response (default 512).
 LLM_TIMEOUT_SECONDS: HTTP timeout (default 30).
-LLM_BLEND_WEIGHT   : Weight given to LLM score when blending (default 0.2).
 """
 
 from __future__ import annotations
@@ -276,10 +275,8 @@ class LLMEnricherStage(Stage):
             else "Top scoring factors: not available"
         )
 
-        # Matched profile keywords that triggered scoring (from ScoringStage)
         matched_terms = getattr(event, "matched_profile_terms", []) or []
 
-        # Matched SBOM components with version info from profile context
         component_versions = ctx.get("component_versions", {})
         matched_components = getattr(event, "matched_sbom_components", []) or []
         sbom_lines: list[str] = []

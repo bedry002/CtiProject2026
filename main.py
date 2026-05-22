@@ -3,6 +3,7 @@
 import logging
 import pathlib
 import time
+
 import urllib3
 from dotenv import load_dotenv
 
@@ -11,14 +12,8 @@ load_dotenv(override=True)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
-from pipeline.runner import Pipeline
 from pymisp import PyMISP
-from stages.ingest import MISPIngestStage
-from stages.ner import NERStage
-from stages.scoring import ScoringStage
-from stages.llm_enricher import LLMEnricherStage
-from stages.report import ReportStage
-from stages.tagger import MISPTaggerStage
+
 from config import (
     MISP_URL, MISP_KEY, MISP_VERIFYCERT,
     BUSINESS_PROFILE, SBOM_PROFILE, RAW_PROFILE, CONFIDENCE_THRESHOLD,
@@ -26,14 +21,29 @@ from config import (
     POLL_INTERVAL_SECONDS, POLL_STATE_PATH, POLL_RUN_ONCE,
     POLL_LOOKBACK_HOURS, POLL_RESET_STATE, TAGGER_DRY_RUN,
 )
+from pipeline.runner import Pipeline
+from stages.ingest import MISPIngestStage
+from stages.llm_enricher import LLMEnricherStage
+from stages.ner import NERStage
+from stages.report import ReportStage
+from stages.scoring import ScoringStage
+from stages.tagger import MISPTaggerStage
 
 REPORT_PATH = pathlib.Path(__file__).parent / "reports" / "curation_report.html"
 _STATE_FILE = pathlib.Path(POLL_STATE_PATH)
 
+_LLM_PROFILE_CTX = {
+    "sectors": BUSINESS_PROFILE.sectors,
+    "technologies": BUSINESS_PROFILE.technologies,
+    "threat_actor_watchlist": RAW_PROFILE.get("threat_actor_watch_list", []),
+    "component_versions": {
+        c.bom_ref: {"name": c.name, "version": c.version, "criticality": c.criticality}
+        for c in (SBOM_PROFILE.components if SBOM_PROFILE else [])
+    },
+}
 
 
 def _load_last_seen() -> int | None:
-    """Return the saved Unix timestamp from the last successful poll, or None on first run."""
     if _STATE_FILE.exists():
         try:
             return int(_STATE_FILE.read_text(encoding="utf-8").strip())
@@ -47,22 +57,11 @@ def _save_last_seen(timestamp: int) -> None:
     _STATE_FILE.write_text(str(timestamp), encoding="utf-8")
 
 
-_LLM_PROFILE_CTX = {
-    "sectors": BUSINESS_PROFILE.sectors,
-    "technologies": BUSINESS_PROFILE.technologies,
-    "threat_actor_watchlist": RAW_PROFILE.get("threat_actor_watch_list", []),
-    "component_versions": {
-        c.bom_ref: {"name": c.name, "version": c.version, "criticality": c.criticality}
-        for c in (SBOM_PROFILE.components if SBOM_PROFILE else [])
-    },
-}
-
-
 def build_pipeline(misp_client: PyMISP) -> Pipeline:
     return Pipeline([
         NERStage(),
         ScoringStage(BUSINESS_PROFILE, SBOM_PROFILE, threshold=CONFIDENCE_THRESHOLD),
-        LLMEnricherStage(profile_context=_LLM_PROFILE_CTX,min_confidence=CONFIDENCE_THRESHOLD,),
+        LLMEnricherStage(profile_context=_LLM_PROFILE_CTX, min_confidence=CONFIDENCE_THRESHOLD),
         MISPTaggerStage(misp_client, dry_run=TAGGER_DRY_RUN),
         ReportStage(REPORT_PATH, threshold=CONFIDENCE_THRESHOLD),
     ], continue_on_stage_error=PIPELINE_CONTINUE_ON_STAGE_ERROR)
@@ -84,29 +83,20 @@ def main() -> None:
 
     if last_seen is None:
         last_seen = int(time.time()) - (POLL_LOOKBACK_HOURS * 3600)
-        logging.info("First run — looking back %dh (timestamp=%d), polling every %ds", POLL_LOOKBACK_HOURS, last_seen, POLL_INTERVAL_SECONDS)
+        logging.info("First run — looking back %dh, polling every %ds", POLL_LOOKBACK_HOURS, POLL_INTERVAL_SECONDS)
     else:
-        logging.info("Resuming — last seen timestamp=%d, polling every %ds", last_seen, POLL_INTERVAL_SECONDS)
+        logging.info("Resuming from last poll, polling every %ds", POLL_INTERVAL_SECONDS)
 
     while True:
-        # Record poll start BEFORE fetching so any event posted during processing
-        # is captured in the next poll rather than silently missed.
         poll_start = int(time.time())
-
         events = ingest.fetch(since_timestamp=last_seen)
 
         if events:
+            # ScoringStage already drops below-threshold events, so results == relevant
             results = pipeline.run(events)
-            relevant = [e for e in results if (e.confidence or 0) >= CONFIDENCE_THRESHOLD]
-            logging.info(
-                "Poll complete — %d/%d events relevant",
-                len(relevant), len(results),
-            )
-            for event in sorted(relevant, key=lambda e: e.confidence or 0.0, reverse=True):
-                logging.info(
-                    "  [%.4f] Event %s | sbom-hits=%s",
-                    event.confidence, event.misp_id, event.matched_sbom_components,
-                )
+            logging.info("Poll complete — %d/%d events above threshold", len(results), len(events))
+            for e in sorted(results, key=lambda e: e.confidence or 0.0, reverse=True):
+                logging.info("  [%.4f] Event %s | sbom-hits=%s", e.confidence, e.misp_id, e.matched_sbom_components)
         else:
             logging.info("No new events")
 

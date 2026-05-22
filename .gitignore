@@ -1,0 +1,23 @@
+# Secrets — never commit
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# Pipeline output
+reports/
+data/
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Models (large binaries)
+models/*.bin
+models/*.pkl

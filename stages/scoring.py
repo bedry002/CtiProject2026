@@ -23,15 +23,13 @@ class BusinessProfile:
 
 @dataclass
 class ScoringWeights:
-    sbom:       float = 0.35  # SBOM component hits — most precise signal
-    keyword:    float = 0.25  # SBOM-derived compound phrase matches
-    ioc:        float = 0.10  # IOC type analysis (profile-blind — kept low)
-    topic:      float = 0.20  # topic cluster relevance (from TOPIC_RELEVANCE_MAP)
-    technology: float = 0.07  # general tech terms
-    context:    float = 0.03  # sector + geography
+    asset:      float = 0.30  # SBOM component hits + SBOM-derived keyword phrases (combined)
+    technology: float = 0.30  # technology stack terms from profile
+    sector:     float = 0.30  # sector alignment
+    geography:  float = 0.10  # geographic relevance
 
     def __post_init__(self) -> None:
-        total = self.sbom + self.keyword + self.ioc + self.topic + self.technology + self.context
+        total = self.asset + self.technology + self.sector + self.geography
         assert abs(total - 1.0) < 1e-6, f"Weights must sum to 1.0, got {total}"
 
 
@@ -58,7 +56,6 @@ def _haystack(event: CurationEvent) -> str:
             for item in vals
             if isinstance(item, dict) and "text" in item
         ),
-        " ".join(t for t, _ in event.topics),
     ]
     return " ".join(filter(None, parts)).lower()
 
@@ -162,7 +159,10 @@ def _ioc_score(raw: dict) -> tuple[float, dict[str, int]]:
 
 
 class ScoringStage(Stage):
-    """Computes a weighted [0, 1] confidence score for each event."""
+    """Computes a weighted [0, 1] confidence score for each event.
+
+    Events scoring below ``threshold`` are dropped before the next stage runs.
+    """
 
     @property
     def name(self) -> str:
@@ -173,10 +173,25 @@ class ScoringStage(Stage):
         profile: BusinessProfile,
         sbom: SBOMProfile | None = None,
         weights: ScoringWeights | None = None,
+        threshold: float = 0.0,
     ) -> None:
         self._profile = profile
         self._sbom = sbom or SBOMProfile()
         self._weights = weights or ScoringWeights()
+        self._threshold = threshold
+
+    def process_batch(self, events: list[CurationEvent]) -> list[CurationEvent]:
+        scored = super().process_batch(events)
+        if self._threshold <= 0:
+            return scored
+        passed = [e for e in scored if (e.confidence or 0) >= self._threshold]
+        dropped = len(scored) - len(passed)
+        if dropped:
+            logger.info(
+                "scoring_filter: dropped %d/%d events below threshold=%.2f",
+                dropped, len(scored), self._threshold,
+            )
+        return passed
 
     def process(self, event: CurationEvent) -> CurationEvent:
         hay = _haystack(event)
@@ -192,8 +207,6 @@ class ScoringStage(Stage):
         }
         cve_s, cve_refs = _cve_sbom_score(self._sbom, event_cves)
         if cve_refs:
-            # Recompute from the union of text-matched and CVE-matched components
-            # so both signals share the same weight/total_weight formula.
             all_refs = list(dict.fromkeys(sbom_refs + cve_refs))
             matched_weight = sum(
                 c.weight for c in self._sbom.components if c.bom_ref in set(all_refs)
@@ -203,10 +216,6 @@ class ScoringStage(Stage):
             ) if self._sbom.total_weight > 0 else 0.0
             sbom_refs = all_refs
 
-        # NER sbom_assets boost — confirmed entity matches raise sbom score.
-        # bom_ref may be a comma-joined string when a shared term maps to multiple
-        # components (e.g. "windows" -> "pos-windows11, server-windows2022").
-        # Split here so dict.fromkeys can deduplicate properly against sbom_refs.
         ner_sbom_hits = []
         for item in event.entities.get("sbom_assets", []):
             if isinstance(item, dict) and "bom_ref" in item:
@@ -218,11 +227,6 @@ class ScoringStage(Stage):
             ner_boost = min(0.2, len(set(ner_sbom_hits)) * 0.07)
             sbom_s = round(min(1.0, sbom_s + ner_boost), 4)
             sbom_refs = list(dict.fromkeys(sbom_refs + ner_sbom_hits))
-
-        # Keyword scoring — SBOM-derived compound phrases only.
-        # Phrases like "esxi ransomware", "pos malware windows", "nginx exploit"
-        # are far more discriminating than single generic terms.
-        # Saturation: ~3 exact compound phrase matches → score 1.0.
         if self._profile.specific_keywords:
             kw_s, kw_matched = _category_score(
                 [t.lower() for t in self._profile.specific_keywords], hay, saturation=0.006
@@ -230,44 +234,42 @@ class ScoringStage(Stage):
         else:
             kw_s, kw_matched = 0.0, []
 
-        tech_s,  tech_matched = _category_score(
+        asset_s = min(1.0, sbom_s + kw_s)
+
+        tech_s, tech_matched = _category_score(
             [t.lower() for t in self._profile.technologies], hay, saturation=0.30
         )
-        ctx_terms = (
-            [t.lower() for t in self._profile.sectors]
-            + [t.lower() for t in self._profile.geographies]
+        sector_s, sector_matched = _category_score(
+            [t.lower() for t in self._profile.sectors], hay, saturation=0.50
         )
-        ctx_s, ctx_matched = _category_score(ctx_terms, hay, saturation=0.50)
+        geo_s, geo_matched = _category_score(
+            [t.lower() for t in self._profile.geographies], hay, saturation=0.50
+        )
 
-        ioc_s, ioc_counts = _ioc_score(event.raw)
-        topic_s = event.topic_relevance_score  # set by TopicModelStage
+        _, ioc_counts = _ioc_score(event.raw)
 
         confidence = round(
-            sbom_s  * w.sbom
-            + kw_s  * w.keyword
-            + ioc_s * w.ioc
-            + topic_s * w.topic
-            + tech_s * w.technology
-            + ctx_s * w.context,
+            asset_s   * w.asset
+            + tech_s  * w.technology
+            + sector_s * w.sector
+            + geo_s   * w.geography,
             4,
         )
 
         event.confidence              = confidence
         event.matched_sbom_components = sbom_refs
-        event.matched_profile_terms   = kw_matched + tech_matched + ctx_matched
+        event.matched_profile_terms   = kw_matched + tech_matched + sector_matched + geo_matched
         event.ioc_summary             = ioc_counts
         event.score_breakdown         = {
-            "sbom":        round(sbom_s,  4),
-            "sbom_cve":    round(cve_s,   4),  # CVE→component cross-reference contribution
-            "keyword":     round(kw_s,    4),
-            "ioc":         round(ioc_s,   4),
-            "topic":       round(topic_s, 4),
-            "tech":        round(tech_s,  4),
-            "context":     round(ctx_s,   4),
+            "asset":     round(asset_s,   4),
+            "sbom_cve":  round(cve_s,     4),
+            "tech":      round(tech_s,    4),
+            "sector":    round(sector_s,  4),
+            "geography": round(geo_s,     4),
         }
 
         logger.debug(
-            "Event %s → %.4f  sbom=%.3f kw=%.3f ioc=%.3f topic=%.3f tech=%.3f ctx=%.3f",
-            event.misp_id, confidence, sbom_s, kw_s, ioc_s, topic_s, tech_s, ctx_s,
+            "Event %s → %.4f  asset=%.3f tech=%.3f sector=%.3f geo=%.3f",
+            event.misp_id, confidence, asset_s, tech_s, sector_s, geo_s,
         )
         return event

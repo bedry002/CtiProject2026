@@ -2,9 +2,8 @@
 import os
 import json
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(override=True)
 import pathlib
-import re
 from stages.scoring import BusinessProfile
 from pipeline.sbom import load_sbom
 
@@ -12,8 +11,6 @@ MISP_URL = os.getenv('MISP_URL')
 MISP_KEY = os.getenv('MISP_KEY') or os.getenv('MISP_API_KEY')
 MISP_VERIFYCERT = False
 PIPELINE_CONTINUE_ON_STAGE_ERROR = (os.getenv("PIPELINE_CONTINUE_ON_STAGE_ERROR", "false").strip().lower() == "true")
-
-_STRIP_PARENS = re.compile(r"\s*\([^)]*\)")
 
 _BASE = pathlib.Path(__file__).parent / "Assets"
 _PROFILE_PATH = _BASE / "Test-bed Profile.json"
@@ -111,6 +108,7 @@ def _load_business_profile(path: pathlib.Path) -> BusinessProfile:
     )
 
 
+RAW_PROFILE      = json.loads(_PROFILE_PATH.read_text(encoding="utf-8"))
 SBOM_PROFILE     = load_sbom(_SBOM_PATH)
 BUSINESS_PROFILE = _load_business_profile(_PROFILE_PATH)
 
@@ -119,5 +117,13 @@ BUSINESS_PROFILE = _load_business_profile(_PROFILE_PATH)
 # These are far more discriminating than single-word generic keywords.
 BUSINESS_PROFILE.specific_keywords = SBOM_PROFILE.specific_threat_phrases()
 
-# Confidence threshold for "relevant" — on the new 0–1 scale
-CONFIDENCE_THRESHOLD = 0.10
+# Confidence threshold 
+CONFIDENCE_THRESHOLD = 0.20
+
+# Polling loop
+POLL_INTERVAL_SECONDS = int(os.getenv("POLL_INTERVAL_SECONDS", "30"))
+POLL_STATE_PATH = os.getenv("POLL_STATE_PATH", "data/poll_state.txt")
+POLL_RUN_ONCE = os.getenv("POLL_RUN_ONCE", "false").strip().lower() == "true"
+POLL_LOOKBACK_HOURS = int(os.getenv("POLL_LOOKBACK_HOURS", "24"))
+POLL_RESET_STATE = os.getenv("POLL_RESET_STATE", "false").strip().lower() == "true"
+TAGGER_DRY_RUN = os.getenv("TAGGER_DRY_RUN", "true").strip().lower() == "true"

@@ -26,13 +26,6 @@ class CurationEvent:
     # Populated by NER stage
     entities: EntityMap = field(default_factory=dict)
 
-    # Populated by topic modelling stage
-    topics: list[tuple[str, float]] = field(default_factory=list)
-
-    # Populated by topic model stage
-    topic_label: str = ""              # human-readable cluster label
-    topic_relevance_score: float = 0.0 # looked up from TOPIC_RELEVANCE_MAP
-
     # Populated by scoring stage
     confidence: float | None = None
     matched_profile_terms: list[str] = field(default_factory=list)
@@ -40,9 +33,12 @@ class CurationEvent:
     score_breakdown: dict[str, float] = field(default_factory=dict)
     ioc_summary: dict[str, int] = field(default_factory=dict)   # attr_type → count
 
+    # Populated by LLM enricher stage
+    analyst_summary: str | None = None
+    implicit_relevance_flags: list[str] = field(default_factory=list)
+
     def __repr__(self) -> str:
         return (
             f"CurationEvent(id={self.misp_id!r}, "
-            f"confidence={self.confidence}, "
-            f"topics={[t for t, _ in self.topics]})"
+            f"confidence={self.confidence})"
         )

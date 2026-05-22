@@ -1,8 +1,11 @@
-"""Report stage — renders scored events to an HTML report."""
+"""Stage 6 — Renders scored events to an HTML debug report."""
+
+from __future__ import annotations
 
 import logging
 import pathlib
 from datetime import datetime, timezone
+
 from pipeline.base import Stage
 from pipeline.event import CurationEvent
 
@@ -22,9 +25,8 @@ def _band(confidence: float) -> tuple[str, str, str]:
     return "low", "#721c24", "#f8d7da"
 
 
-def _bar(confidence: float, width: int = 200) -> str:
-    pct = min(int(confidence * 100), 100)  # 0–1 scale maps directly to 0–100%
-    _, fg, _ = _band(confidence)
+def _bar(confidence: float, fg: str, width: int = 200) -> str:
+    pct = min(int(confidence * 100), 100)
     return (
         f'<div style="background:#e9ecef;border-radius:4px;width:{width}px;height:12px;">'
         f'<div style="background:{fg};width:{pct}%;height:12px;border-radius:4px;"></div>'
@@ -35,17 +37,16 @@ def _bar(confidence: float, width: int = 200) -> str:
 def _entity_pills(entities: dict) -> str:
     if not entities:
         return "<em style='color:#6c757d'>none</em>"
-    pills: list[str] = []
-    colours = {
+    _COLOURS = {
         "cves": "#f8d7da", "ttps": "#fff3cd", "iocs": "#cfe2ff",
         "threat_actors": "#e2d9f3", "sectors": "#d1e7dd",
-        "software": "#fde8d8", "geographies": "#d1e7dd",
-        "malware": "#f8d7da",
+        "software": "#fde8d8", "geographies": "#d1e7dd", "malware": "#f8d7da",
     }
+    pills: list[str] = []
     for label, values in entities.items():
         if not isinstance(values, list):
             continue
-        bg = colours.get(label, "#e9ecef")
+        bg = _COLOURS.get(label, "#e9ecef")
         for item in values:
             text = item["text"] if isinstance(item, dict) else str(item)
             pills.append(
@@ -57,56 +58,54 @@ def _entity_pills(entities: dict) -> str:
 
 
 def _render(events: list[CurationEvent], all_count: int, threshold: float) -> str:
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    relevant = [e for e in events if (e.confidence or 0) >= threshold]
-    high   = sum(1 for e in events if (e.confidence or 0) >= 0.50)
-    medium = sum(1 for e in events if 0.25 <= (e.confidence or 0) < 0.50)
-    low    = sum(1 for e in events if threshold <= (e.confidence or 0) < 0.25)
+    now      = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    relevant = sum(1 for e in events if (e.confidence or 0) >= threshold)
+    high     = sum(1 for e in events if (e.confidence or 0) >= 0.50)
+    medium   = sum(1 for e in events if 0.25 <= (e.confidence or 0) < 0.50)
+    low      = sum(1 for e in events if threshold <= (e.confidence or 0) < 0.25)
 
     rows: list[str] = []
     for e in sorted(events, key=lambda x: x.confidence or 0, reverse=True):
-        conf = e.confidence or 0
-        label, fg, bg = _band(conf)
-        bd = e.score_breakdown
-        cve_badge = (
-            ' <span title="CVE→component match" style="color:#0d6efd">&#x2731;</span>'
-            if bd.get("sbom_cve", 0) > 0 else ""
-        )
+        conf           = e.confidence or 0
+        label, fg, bg  = _band(conf)
+        bd             = e.score_breakdown
+        cve_badge      = (' <span title="CVE→component match" style="color:#0d6efd">&#x2731;</span>'
+                          if bd.get("sbom_cve", 0) > 0 else "")
         breakdown_html = (
             f'<span title="SBOM component + keyword match (sbom_cve={bd.get("sbom_cve",0):.2f})">Asset:{bd.get("asset",0):.2f}{cve_badge}</span> '
             f'<span title="Technology stack">Tech:{bd.get("tech",0):.2f}</span> '
             f'<span title="Sector alignment">Sec:{bd.get("sector",0):.2f}</span> '
             f'<span title="Geography">Geo:{bd.get("geography",0):.2f}</span>'
         ) if bd else ""
-        ioc = e.ioc_summary
-        total_iocs = sum(ioc.values())
-        ioc_line = (
-            f'{total_iocs} IOCs &nbsp;'
-            f'<small style="color:#6c757d">'
+
+        ioc         = e.ioc_summary
+        total_iocs  = sum(ioc.values())
+        ioc_line    = (
+            f'{total_iocs} IOCs &nbsp;<small style="color:#6c757d">'
             f'vuln:{ioc.get("vulnerability",0)} '
             f'net:{sum(ioc.get(t,0) for t in ("hostname","domain","ip-src","ip-dst","url"))} '
-            f'file:{sum(ioc.get(t,0) for t in ("md5","sha256","sha1","filename"))}'
-            f'</small>'
+            f'file:{sum(ioc.get(t,0) for t in ("md5","sha256","sha1","filename"))}</small>'
         ) if total_iocs else "<em style='color:#6c757d'>none</em>"
+
         sbom_html = (
             ", ".join(f'<code style="font-size:0.78em">{r}</code>' for r in e.matched_sbom_components)
             or "<em style='color:#6c757d'>none</em>"
         )
+
         summary_row = ""
-        if getattr(e, "analyst_summary", None):
-            flags = getattr(e, "implicit_relevance_flags", [])
+        if e.analyst_summary:
             flags_html = (
-                f'<br><small style="color:#6c757d">Flags: {"; ".join(flags)}</small>'
-                if flags else ""
+                f'<br><small style="color:#6c757d">Flags: {"; ".join(e.implicit_relevance_flags)}</small>'
+                if e.implicit_relevance_flags else ""
             )
             summary_row = (
                 f'<tr style="background:{bg}">'
                 f'<td colspan="9" style="border-left:3px solid #d4a017;padding:5px 14px 8px">'
                 f'<b style="color:#856404;font-size:0.82em">&#x1F9E0; Analyst Summary</b>'
                 f'<p style="margin:3px 0;font-size:0.88em">{e.analyst_summary}</p>'
-                f'{flags_html}'
-                f'</td></tr>'
+                f'{flags_html}</td></tr>'
             )
+
         rows.append(f"""
         <tr style="background:{bg}">
           <td style="color:{fg};font-weight:bold;white-space:nowrap">{label.upper()}</td>
@@ -114,7 +113,7 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
           <td>{e.raw.get('date','')}</td>
           <td>{e.raw.get('info','')[:90]}</td>
           <td style="text-align:center">
-            {_bar(conf)}<br>
+            {_bar(conf, fg)}<br>
             <code style="font-size:0.85em;font-weight:bold">{conf:.4f}</code><br>
             <small style="color:#6c757d;font-size:0.75em">{breakdown_html}</small>
           </td>
@@ -133,8 +132,7 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
   body {{ font-family: system-ui, sans-serif; margin: 2rem; color: #212529; }}
   h1 {{ color: #0d6efd; }} h2 {{ color: #495057; border-bottom: 1px solid #dee2e6; padding-bottom: 6px; }}
   .stat-grid {{ display: flex; gap: 1rem; margin: 1rem 0; flex-wrap: wrap; }}
-  .stat {{ background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px;
-           padding: 1rem 1.5rem; min-width: 130px; text-align: center; }}
+  .stat {{ background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem 1.5rem; min-width: 130px; text-align: center; }}
   .stat .value {{ font-size: 2rem; font-weight: bold; color: #0d6efd; }}
   .stat .label {{ color: #6c757d; font-size: 0.85em; }}
   table {{ border-collapse: collapse; width: 100%; font-size: 0.9em; }}
@@ -146,18 +144,15 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
 </head>
 <body>
 <h1>Curation Engine — Scoring Report</h1>
-<p class="meta">Generated: {now} &nbsp;|&nbsp; MISP events evaluated: {all_count} &nbsp;|&nbsp;
-Confidence threshold: {threshold}</p>
-
+<p class="meta">Generated: {now} &nbsp;|&nbsp; MISP events evaluated: {all_count} &nbsp;|&nbsp; Confidence threshold: {threshold}</p>
 <h2>Summary</h2>
 <div class="stat-grid">
   <div class="stat"><div class="value">{all_count}</div><div class="label">Events evaluated</div></div>
-  <div class="stat"><div class="value">{len(relevant)}</div><div class="label">Above threshold</div></div>
+  <div class="stat"><div class="value">{relevant}</div><div class="label">Above threshold</div></div>
   <div class="stat"><div class="value" style="color:#1a7a3e">{high}</div><div class="label">High (&ge;0.50)</div></div>
   <div class="stat"><div class="value" style="color:#856404">{medium}</div><div class="label">Medium (0.25–0.50)</div></div>
   <div class="stat"><div class="value" style="color:#721c24">{low}</div><div class="label">Low (0.10–0.25)</div></div>
 </div>
-
 <h2>Event Scores</h2>
 <table>
 <thead>
@@ -182,15 +177,10 @@ class ReportStage(Stage):
     def name(self) -> str:
         return "report"
 
-    def __init__(
-        self,
-        output_path: pathlib.Path,
-        threshold: float = 0.05,
-        all_count: int = 0,
-    ) -> None:
+    def __init__(self, output_path: pathlib.Path, threshold: float = 0.05, all_count: int = 0) -> None:
         self._output_path = output_path
-        self._threshold = threshold
-        self._all_count = all_count
+        self._threshold   = threshold
+        self._all_count   = all_count
 
     def process(self, event: CurationEvent) -> CurationEvent:
         return event
@@ -200,8 +190,5 @@ class ReportStage(Stage):
         self._output_path.parent.mkdir(exist_ok=True)
         self._output_path.write_text(html, encoding="utf-8")
         relevant = sum(1 for e in events if (e.confidence or 0) >= self._threshold)
-        logger.info(
-            "Report written → %s  (%d/%d relevant)",
-            self._output_path, relevant, len(events),
-        )
+        logger.info("Report written → %s  (%d/%d relevant)", self._output_path, relevant, len(events))
         return events

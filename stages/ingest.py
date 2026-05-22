@@ -1,8 +1,12 @@
 """Stage 1 — Pull events from a MISP instance."""
 
+from __future__ import annotations
+
 import logging
-from pymisp import PyMISP, MISPEvent
 from typing import cast
+
+from pymisp import MISPEvent, PyMISP
+
 from pipeline.base import Stage
 from pipeline.event import CurationEvent
 
@@ -10,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 # Events with more attributes than this are almost certainly bulk IOC feeds
 # (e.g. PhishTank with 60k attributes, MalwareBazaar hash dumps).
-# They produce misleading high ioc_s scores and are not narrative CTI.
 _MAX_ATTRIBUTE_COUNT = 200
 _PAGE_SIZE = 500
 
@@ -22,9 +25,6 @@ class MISPIngestStage(Stage):
       Phase 1 — metadata-only search: retrieve event stubs with attribute counts.
       Phase 2 — full fetch: only pull complete event data for events that pass
                 the attribute-count filter.
-
-    This prevents 84MB+ payloads from bulk IOC aggregator events causing
-    IncompleteRead errors and polluting the scoring pipeline.
     """
 
     @property
@@ -35,20 +35,15 @@ class MISPIngestStage(Stage):
         self._client = PyMISP(url, key, verifycert)
 
     def fetch(self, since_timestamp: int) -> list[CurationEvent]:
-        """Pull narrative CTI events from MISP, skipping bulk IOC feeds.
-
-        since_timestamp: Unix timestamp — only return events modified at or after
-            this time.
-        """
+        """Pull narrative CTI events from MISP, skipping bulk IOC feeds."""
         logger.info("Polling for events since timestamp=%d", since_timestamp)
 
-        # Phase 1: metadata only — paginate until MISP returns an empty page
         stubs: list[MISPEvent] = []
         page = 1
-        search_kwargs: dict = dict(
-            metadata=True, pythonify=True, limit=_PAGE_SIZE, timestamp=since_timestamp
-        )
-
+        search_kwargs = {
+            "metadata": True, "pythonify": True,
+            "limit": _PAGE_SIZE, "timestamp": since_timestamp,
+        }
         while True:
             batch = self._client.search(page=page, **search_kwargs)
             if not batch:
@@ -62,8 +57,7 @@ class MISPIngestStage(Stage):
             logger.info("No events returned from MISP")
             return []
 
-        # Filter: skip events with too many attributes (bulk IOC feeds)
-        candidate_ids = []
+        candidate_ids: list[tuple[str, str]] = []
         skipped = 0
         for stub in stubs:
             attr_count = int(getattr(stub, "attribute_count", 0) or 0)
@@ -71,28 +65,18 @@ class MISPIngestStage(Stage):
                 candidate_ids.append((str(stub.id), str(stub.uuid)))
             else:
                 skipped += 1
-                logger.debug(
-                    "Skipping event %s — %d attributes (bulk IOC feed)",
-                    stub.id, attr_count,
-                )
+                logger.debug("Skipping event %s — %d attributes (bulk IOC feed)", stub.id, attr_count)
 
         logger.info(
             "Metadata filter: %d/%d events pass (skipped %d bulk feed events)",
             len(candidate_ids), len(stubs), skipped,
         )
 
-        # Phase 2: full fetch for each candidate
         events: list[CurationEvent] = []
         for misp_id, misp_uuid in candidate_ids:
             try:
                 full = self._client.get_event(misp_id, pythonify=True)
-                events.append(
-                    CurationEvent(
-                        misp_id=misp_id,
-                        misp_uuid=misp_uuid,
-                        raw=full.to_dict(),
-                    )
-                )
+                events.append(CurationEvent(misp_id=misp_id, misp_uuid=misp_uuid, raw=full.to_dict()))
             except Exception as exc:
                 logger.warning("Failed to fetch event %s: %s", misp_id, exc)
 

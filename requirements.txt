@@ -1,14 +1,16 @@
 # Core pipeline
 pymisp>=2.4
 
-# NER (Stage 2) — uncomment when wiring up
-# spacy>=3.7
+# NER (Stage 2)
+spacy>=3.7
+# spaCy model — install separately:
 # pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_trf-3.7.3/en_core_web_trf-3.7.3-py3-none-any.whl
 
-# Topic modelling (Stage 3) — uncomment when wiring up
-# scikit-learn>=1.4
-# bertopic>=0.16
-
-# Sbom integration
+# SBOM orchestrator
 requests>=2.31.0
+
+# Profile form API
+fastapi>=0.111.0
+uvicorn>=0.29.0
+
 python-dotenv>=1.0.0

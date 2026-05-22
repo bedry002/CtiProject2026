@@ -1,5 +1,7 @@
 """Entry point; continuous polling loop that curates MISP events as they arrive."""
 
+from __future__ import annotations
+
 import logging
 import pathlib
 import time

@@ -1,5 +1,7 @@
 """Central configuration — edit this to describe your organisation and MISP connection."""
 
+from __future__ import annotations
+
 import json
 import os
 import pathlib
@@ -29,12 +31,7 @@ _SKIP_TECH_VALUES = {
 
 
 def _tech_from_profile(data: dict) -> list[str]:
-    """Auto-derive technology terms from the profile's technology_stack section.
-
-    Uses a word-count heuristic: strings with ≤4 words are product/service names;
-    strings with ≥5 words are policy prose and are skipped. Works for any
-    compliant profile JSON without a manually maintained key allowlist.
-    """
+    """Walk technology_stack and collect ≤4-word strings as product names; ≥5 words are policy prose."""
     terms: list[str] = []
 
     def walk(obj: object) -> None:

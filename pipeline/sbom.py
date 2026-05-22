@@ -1,5 +1,7 @@
 """SBOM parser — loads a CycloneDX JSON SBOM into a structured model."""
 
+from __future__ import annotations
+
 import json
 import pathlib
 import re
@@ -10,6 +12,12 @@ _CRITICALITY_WEIGHT = {"high": 1.0, "medium": 0.6, "low": 0.3}
 _DEFAULT_WEIGHT = 0.4
 
 _STRIP = re.compile(r"[_\-]")
+
+_THREAT_VERBS = (
+    "exploit", "vulnerability", "cve", "attack", "compromise",
+    "brute force", "privilege escalation", "remote code execution",
+    "backdoor", "malware", "ransomware", "rce", "bypass",
+)
 
 
 def _cpe_product(cpe: str) -> str | None:
@@ -29,7 +37,7 @@ class SBOMComponent:
     cpe: str | None
     criticality: str
     weight: float
-    aliases: list[str] = field(default_factory=list)  # explicit short-forms from SBOM properties
+    aliases: list[str] = field(default_factory=list)
 
     def match_terms(self) -> list[str]:
         """Discriminating strings that could plausibly appear in a MISP event for this component.
@@ -37,42 +45,38 @@ class SBOMComponent:
         Intentionally excluded to prevent false-positive score inflation:
           - Supplier names ("microsoft", "canonical") — map to many components and fire on
             any event that mentions the vendor even if the specific product isn't affected.
-          - Version strings ("current", "8.0", "23h2") — too generic; "current" matches 3+
-            components, "8.0" matches in IP addresses and unrelated software versions.
-          - Very short first words (<7 chars) — "active" (Active Directory) matches "actively",
-            "azure" matches in unrelated product names.
+          - Version strings ("current", "8.0", "23h2") — too generic.
+          - Very short first words (<7 chars) — "active" (Active Directory) matches "actively".
 
         Short-form aliases that are genuinely useful (e.g. "ubuntu", "aks", "sentinel")
         should be specified explicitly in the SBOM component's match_alias properties.
         """
+        seen: set[str] = set()
         terms: list[str] = []
 
-        # Full component name — primary signal
-        terms.append(self.name.lower())
+        def _add(t: str) -> None:
+            t = t.lower().strip()
+            if t and t not in seen:
+                seen.add(t)
+                terms.append(t)
 
-        # CPE product field — often the canonical short form
-        # e.g. cpe:…:vmware:esxi → "esxi", cpe:…:nginx:nginx → "nginx"
+        _add(self.name)
+
         if self.cpe:
             prod = _cpe_product(self.cpe)
-            if prod and prod not in terms:
-                terms.append(prod)
+            if prod:
+                _add(prod)
 
-        # First significant word — only if it's long enough to be a proper identifier
-        # and is not the supplier name (which would re-introduce the generic-vendor problem).
         words = self.name.split()
         if len(words) >= 2:
             first = words[0].lower()
-            supplier_lower = self.supplier.lower() if self.supplier else ""
-            if len(first) >= 7 and first != supplier_lower and first not in terms:
-                terms.append(first)
+            if len(first) >= 7 and first != (self.supplier or "").lower():
+                _add(first)
 
-        # Explicit aliases from SBOM properties (e.g. "ubuntu", "aks", "sentinel")
         for alias in self.aliases:
-            a = alias.lower().strip()
-            if a and a not in terms:
-                terms.append(a)
+            _add(alias)
 
-        return list(dict.fromkeys(t for t in terms if t))
+        return terms
 
 
 @dataclass
@@ -82,66 +86,57 @@ class SBOMRisk:
     description: str
     affected_refs: list[str]
     severity: str
-    known_cves: list[str] = field(default_factory=list)  # CVE IDs that map to this risk
+    known_cves: list[str] = field(default_factory=list)
 
 
 @dataclass
 class SBOMProfile:
     components: list[SBOMComponent] = field(default_factory=list)
     risks: list[SBOMRisk] = field(default_factory=list)
+    _total_weight: float = field(default=0.0, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        self._total_weight = sum(c.weight for c in self.components)
 
     @property
     def total_weight(self) -> float:
-        return sum(c.weight for c in self.components)
+        return self._total_weight
 
     def high_criticality(self) -> list[SBOMComponent]:
         return [c for c in self.components if c.criticality == "high"]
 
     def all_match_terms(self) -> set[str]:
         """Flat set of all component match terms — used for fast NER lookup."""
-        terms: set[str] = set()
-        for c in self.components:
-            terms.update(c.match_terms())
-        return terms
+        return {term for c in self.components for term in c.match_terms()}
 
     def specific_threat_phrases(self) -> list[str]:
         """Generate asset-specific compound threat phrases for high-signal keyword matching.
 
-        Combines each component's match terms with threat verbs to produce
-        phrases like 'openssh exploit', 'ubuntu vulnerability', 'virtualbox escape'.
-        These are far more discriminating than generic single-word keywords.
-        Also includes phrases derived from documented SBOM risk entries.
+        Combines each component's match terms with threat verbs to produce phrases like
+        'openssh exploit', 'ubuntu vulnerability'. Also includes bigrams from SBOM risks.
         """
-        _THREAT_VERBS = [
-            "exploit", "vulnerability", "cve", "attack", "compromise",
-            "brute force", "privilege escalation", "remote code execution",
-            "backdoor", "malware", "ransomware", "rce", "bypass",
-        ]
+        seen: set[str] = set()
         phrases: list[str] = []
 
         for component in self.components:
-            # Use the two most distinctive terms per component (name + first word/alias).
-            # Noun-first form only ("esxi ransomware", not "ransomware esxi") — this
-            # matches how product names appear in CTI headlines and event descriptions,
-            # and halves the phrase list without reducing match quality.
-            key_terms = component.match_terms()[:2]
-            for term in key_terms:
+            for term in component.match_terms()[:2]:
                 if len(term) < 4:
                     continue
                 for verb in _THREAT_VERBS:
-                    phrases.append(f"{term} {verb}")
+                    phrase = f"{term} {verb}"
+                    if phrase not in seen:
+                        seen.add(phrase)
+                        phrases.append(phrase)
 
-        # Add phrases derived from documented SBOM risks
         for risk in self.risks:
-            # Description already contains specific risk language —
-            # extract meaningful 2-3 word phrases from it
             words = re.findall(r"\b[a-z][a-z0-9\-]{2,}\b", risk.description.lower())
             for i in range(len(words) - 1):
-                bigram = f"{words[i]} {words[i+1]}"
-                if bigram not in phrases:
+                bigram = f"{words[i]} {words[i + 1]}"
+                if bigram not in seen:
+                    seen.add(bigram)
                     phrases.append(bigram)
 
-        return list(dict.fromkeys(phrases))  # deduplicate, preserve order
+        return phrases
 
 
 def load_sbom(path: pathlib.Path) -> SBOMProfile:
@@ -151,8 +146,6 @@ def load_sbom(path: pathlib.Path) -> SBOMProfile:
         props_list = raw.get("properties", [])
         props = {p["name"]: p["value"] for p in props_list}
         criticality = props.get("criticality", "unknown")
-        weight = _CRITICALITY_WEIGHT.get(criticality, _DEFAULT_WEIGHT)
-        # Collect all match_alias entries (multiple properties with the same key allowed)
         aliases = [p["value"] for p in props_list if p.get("name") == "match_alias"]
         components.append(SBOMComponent(
             bom_ref=raw.get("bom-ref", ""),
@@ -161,24 +154,22 @@ def load_sbom(path: pathlib.Path) -> SBOMProfile:
             supplier=raw.get("supplier", {}).get("name", ""),
             cpe=raw.get("cpe"),
             criticality=criticality,
-            weight=weight,
+            weight=_CRITICALITY_WEIGHT.get(criticality, _DEFAULT_WEIGHT),
             aliases=aliases,
         ))
 
     risks = []
     for raw in data.get("vulnerabilities", []):
-        severity = "unknown"
-        for rating in raw.get("ratings", []):
-            severity = rating.get("severity", "unknown")
-            break
-        # known_cves may be stored as a top-level array or inside a "references" list
-        known_cves = [c.upper() for c in raw.get("known_cves", [])]
+        severity = next(
+            (r.get("severity", "unknown") for r in raw.get("ratings", [])),
+            "unknown",
+        )
         risks.append(SBOMRisk(
             risk_id=raw.get("id", ""),
             description=raw.get("description", ""),
             affected_refs=[a.get("ref", "") for a in raw.get("affects", [])],
             severity=severity,
-            known_cves=known_cves,
+            known_cves=[c.upper() for c in raw.get("known_cves", [])],
         ))
 
     return SBOMProfile(components=components, risks=risks)

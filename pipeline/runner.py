@@ -1,6 +1,10 @@
 """Orchestrates stages and drives events through the pipeline."""
 
+from __future__ import annotations
+
 import logging
+import time
+
 from .base import Stage
 from .event import CurationEvent
 
@@ -15,6 +19,7 @@ class Pipeline:
     def run(self, events: list[CurationEvent]) -> list[CurationEvent]:
         active = list(events)
         for stage in self.stages:
+            t0 = time.perf_counter()
             try:
                 active = stage.process_batch(active)
             except Exception:
@@ -30,14 +35,17 @@ class Pipeline:
                     except Exception:
                         logger.exception(
                             "Stage %s failed for event %s — dropping event",
-                            stage.name,
-                            event.misp_id,
+                            stage.name, event.misp_id,
                         )
                 logger.warning(
                     "Stage %s recovered with %d/%d events",
-                    stage.name,
-                    len(recovered),
-                    len(active),
+                    stage.name, len(recovered), len(active),
                 )
                 active = recovered
+            else:
+                elapsed = time.perf_counter() - t0
+                logger.info(
+                    "Stage %-20s %4d events  %.2fs",
+                    stage.name, len(active), elapsed,
+                )
         return active

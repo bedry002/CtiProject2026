@@ -1,10 +1,10 @@
 """Abstract base class for all pipeline stages."""
 
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from __future__ import annotations
 
-if TYPE_CHECKING:
-    from .event import CurationEvent
+from abc import ABC, abstractmethod
+
+from .event import CurationEvent
 
 
 class Stage(ABC):
@@ -12,15 +12,14 @@ class Stage(ABC):
 
     @property
     @abstractmethod
-    def name(self) -> str:
-        ...
+    def name(self) -> str: ...
 
     @abstractmethod
-    def process(self, event: "CurationEvent") -> "CurationEvent":
+    def process(self, event: CurationEvent) -> CurationEvent:
         """Transform a single event in-place and return it."""
         ...
 
-    def process_batch(self, events: list["CurationEvent"]) -> list["CurationEvent"]:
+    def process_batch(self, events: list[CurationEvent]) -> list[CurationEvent]:
         """Process a batch of events. Override for stages that benefit from batching."""
         return [self.process(e) for e in events]
 

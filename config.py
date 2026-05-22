@@ -1,21 +1,24 @@
 """Central configuration — edit this to describe your organisation and MISP connection."""
-import os
+
 import json
-from dotenv import load_dotenv
-load_dotenv(override=True)
+import os
 import pathlib
-from stages.scoring import BusinessProfile
+
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
+
 from pipeline.sbom import load_sbom
+from stages.scoring import BusinessProfile
 
-MISP_URL = os.getenv('MISP_URL')
-MISP_KEY = os.getenv('MISP_KEY') or os.getenv('MISP_API_KEY')
+MISP_URL = os.getenv("MISP_URL")
+MISP_KEY = os.getenv("MISP_KEY") or os.getenv("MISP_API_KEY")
 MISP_VERIFYCERT = False
-PIPELINE_CONTINUE_ON_STAGE_ERROR = (os.getenv("PIPELINE_CONTINUE_ON_STAGE_ERROR", "false").strip().lower() == "true")
+PIPELINE_CONTINUE_ON_STAGE_ERROR = os.getenv("PIPELINE_CONTINUE_ON_STAGE_ERROR", "false").strip().lower() == "true"
 
-_BASE = pathlib.Path(__file__).parent / "Assets"
+_BASE         = pathlib.Path(__file__).parent / "Assets"
 _PROFILE_PATH = _BASE / "Test-bed Profile.json"
 _SBOM_PATH    = _BASE / "SBOM.json"
-
 
 _SKIP_TECH_VALUES = {
     "n/a", "none", "true", "false", "hybrid", "basic",
@@ -29,11 +32,9 @@ def _tech_from_profile(data: dict) -> list[str]:
     """Auto-derive technology terms from the profile's technology_stack section.
 
     Uses a word-count heuristic: strings with ≤4 words are product/service names;
-    strings with ≥5 words are policy prose and are skipped.  Works for any
-    compliant profile JSON without a manually maintained key allowlist — switching
-    to a different business profile requires no code changes.
+    strings with ≥5 words are policy prose and are skipped. Works for any
+    compliant profile JSON without a manually maintained key allowlist.
     """
-    tech_stack = data.get("technology_stack", {})
     terms: list[str] = []
 
     def walk(obj: object) -> None:
@@ -53,28 +54,20 @@ def _tech_from_profile(data: dict) -> list[str]:
                     and not s[0].isdigit()):
                 terms.append(s_lower)
 
-    walk(tech_stack)
-    return list(dict.fromkeys(terms))  # deduplicate, preserve order
+    walk(data.get("technology_stack", {}))
+    return list(dict.fromkeys(terms))
 
 
-def _load_business_profile(path: pathlib.Path) -> BusinessProfile:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    org  = data["organisation"]
+def _load_business_profile(data: dict) -> BusinessProfile:
+    org = data["organisation"]
 
     sectors = [s.lower() for s in org.get("naics_label", "").replace(" and ", ", ").split(", ") if s]
-    # Fall back to business unit names if NAICS label is absent
     if not sectors:
         sectors = [bu.lower() for bu in org.get("business_units", [])]
 
-    # Auto-derived from technology_stack — no manual list to maintain when
-    # switching business profiles.
     technologies = _tech_from_profile(data)
 
-    geographies: list[str] = []
-    for part in org.get("primary_headquarters", "").split(","):
-        part = part.strip()
-        if part:
-            geographies.append(part)
+    geographies = [p.strip() for p in org.get("primary_headquarters", "").split(",") if p.strip()]
 
     keywords = [
         # Retail-specific threats
@@ -108,22 +101,19 @@ def _load_business_profile(path: pathlib.Path) -> BusinessProfile:
     )
 
 
+# Read profile JSON once — shared by RAW_PROFILE and BusinessProfile
 RAW_PROFILE      = json.loads(_PROFILE_PATH.read_text(encoding="utf-8"))
 SBOM_PROFILE     = load_sbom(_SBOM_PATH)
-BUSINESS_PROFILE = _load_business_profile(_PROFILE_PATH)
-
-# Enrich the profile with SBOM-derived compound threat phrases.
-# e.g. "openssh exploit", "brute force ubuntu", "virtualbox escape"
-# These are far more discriminating than single-word generic keywords.
+BUSINESS_PROFILE = _load_business_profile(RAW_PROFILE)
 BUSINESS_PROFILE.specific_keywords = SBOM_PROFILE.specific_threat_phrases()
 
-# Confidence threshold 
-CONFIDENCE_THRESHOLD = 0.20
+# Scoring
+CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.20"))
 
 # Polling loop
 POLL_INTERVAL_SECONDS = int(os.getenv("POLL_INTERVAL_SECONDS", "30"))
-POLL_STATE_PATH = os.getenv("POLL_STATE_PATH", "data/poll_state.txt")
-POLL_RUN_ONCE = os.getenv("POLL_RUN_ONCE", "false").strip().lower() == "true"
-POLL_LOOKBACK_HOURS = int(os.getenv("POLL_LOOKBACK_HOURS", "24"))
-POLL_RESET_STATE = os.getenv("POLL_RESET_STATE", "false").strip().lower() == "true"
-TAGGER_DRY_RUN = os.getenv("TAGGER_DRY_RUN", "true").strip().lower() == "true"
+POLL_STATE_PATH       = os.getenv("POLL_STATE_PATH", "data/poll_state.txt")
+POLL_RUN_ONCE         = os.getenv("POLL_RUN_ONCE", "false").strip().lower() == "true"
+POLL_LOOKBACK_HOURS   = int(os.getenv("POLL_LOOKBACK_HOURS", "24"))
+POLL_RESET_STATE      = os.getenv("POLL_RESET_STATE", "false").strip().lower() == "true"
+TAGGER_DRY_RUN        = os.getenv("TAGGER_DRY_RUN", "true").strip().lower() == "true"

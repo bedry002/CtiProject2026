@@ -1,16 +1,15 @@
-# Core pipeline
 pymisp>=2.4
-
-# NER (Stage 2)
-spacy>=3.7
-# spaCy model — install separately:
-# pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_trf-3.7.3/en_core_web_trf-3.7.3-py3-none-any.whl
-
-# SBOM orchestrator
 requests>=2.31.0
-
-# Profile form API
-fastapi>=0.111.0
-uvicorn>=0.29.0
-
 python-dotenv>=1.0.0
+
+# Core ML stack (required for BERTopic)
+numpy
+scipy
+pandas
+scikit-learn
+
+# BERTopic dependencies
+bertopic
+sentence-transformers
+umap-learn
+hdbscan

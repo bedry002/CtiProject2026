@@ -5,9 +5,8 @@ pymisp>=2.4
 # spacy>=3.7
 # pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_trf-3.7.3/en_core_web_trf-3.7.3-py3-none-any.whl
 
-# Topic modelling (Stage 3) — uncomment when wiring up
-# scikit-learn>=1.4
-# bertopic>=0.16
+# LLM enrichment (Stage 3) — talks to a local Ollama daemon over HTTP.
+# No extra Python deps required; uses the existing `requests` install.
 
 # Sbom integration
 requests>=2.31.0

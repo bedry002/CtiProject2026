@@ -1,10 +1,8 @@
 """Entry point; wire stages together and run the pipeline."""
 
-from bertopic import BERTopic
 import logging
 import pathlib
 import urllib3
-from typing import Any
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,14 +14,15 @@ from pipeline.runner import Pipeline
 from pymisp import PyMISP
 from stages.ingest import MISPIngestStage
 from stages.ner import NERStage
-from stages.topics import TopicModelStage
 from stages.scoring import ScoringStage
+from stages.ollama import OllamaStage
 from stages.report import ReportStage
 from stages.tagger import MISPTaggerStage
 from config import (
     MISP_URL, MISP_KEY, MISP_VERIFYCERT,
     BUSINESS_PROFILE, SBOM_PROFILE, CONFIDENCE_THRESHOLD,
     PIPELINE_CONTINUE_ON_STAGE_ERROR,
+    OLLAMA_ENABLED, OLLAMA_BASE_URL, OLLAMA_MODEL, OLLAMA_THRESHOLD,
 )
 
 REPORT_PATH = pathlib.Path(__file__).parent / "reports" / "curation_report.html"
@@ -33,17 +32,31 @@ TAGGER_DRY_RUN = True
 
 
 def build_pipeline(misp_client: PyMISP, event_count: int) -> Pipeline:
-    model_path = pathlib.Path(__file__).parent / "models" / "bertopic_model"
-    topic_model: Any = BERTopic.load(str(model_path))
-    logging.info("Loaded BERTopic model from %s", model_path)
-
-    return Pipeline([
+    stages = [
         NERStage(),
-        TopicModelStage(topic_model),
         ScoringStage(BUSINESS_PROFILE, SBOM_PROFILE),
+    ]
+
+    # LLM justification runs AFTER scoring so the deterministic confidence
+    # number stays untouched; it only enriches events that already crossed
+    # the gate. If Ollama is unreachable the stage logs and skips — the
+    # rest of the pipeline carries on.
+    if OLLAMA_ENABLED:
+        stages.append(
+            OllamaStage(
+                base_url=OLLAMA_BASE_URL,
+                model=OLLAMA_MODEL,
+                threshold=OLLAMA_THRESHOLD,
+                profile=BUSINESS_PROFILE,
+            )
+        )
+
+    stages.extend([
         MISPTaggerStage(misp_client, dry_run=TAGGER_DRY_RUN),
         ReportStage(REPORT_PATH, threshold=CONFIDENCE_THRESHOLD, all_count=event_count),
-    ], continue_on_stage_error=PIPELINE_CONTINUE_ON_STAGE_ERROR)
+    ])
+
+    return Pipeline(stages, continue_on_stage_error=PIPELINE_CONTINUE_ON_STAGE_ERROR)
 
 
 def main() -> None:

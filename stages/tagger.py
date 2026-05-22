@@ -107,8 +107,6 @@ class MISPTaggerStage(Stage):
                 "breakdown: "
                 + ", ".join(f"{k}={v:.3f}" for k, v in breakdown.items())
             )
-        if event.topic_label:
-            score_lines.append(f"topic: {event.topic_label}")
         if event.matched_sbom_components:
             score_lines.append(f"sbom-hits: {', '.join(event.matched_sbom_components)}")
         if event.matched_profile_terms:

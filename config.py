@@ -121,3 +121,13 @@ BUSINESS_PROFILE.specific_keywords = SBOM_PROFILE.specific_threat_phrases()
 
 # Confidence threshold for "relevant" — on the new 0–1 scale
 CONFIDENCE_THRESHOLD = 0.10
+
+# --- Ollama enrichment stage --------------------------------------------------
+# Local LLM that runs *after* scoring on events above OLLAMA_THRESHOLD and
+# writes a natural-language justification into event.llm_justification.
+# It never feeds back into the confidence score.
+
+OLLAMA_ENABLED   = (os.getenv("OLLAMA_ENABLED", "true").strip().lower() == "true")
+OLLAMA_BASE_URL  = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+OLLAMA_MODEL     = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+OLLAMA_THRESHOLD = float(os.getenv("OLLAMA_THRESHOLD", "0.25"))  # = BAND_MEDIUM

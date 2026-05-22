@@ -1,5 +1,6 @@
 """Report stage — renders scored events to an HTML report."""
 
+import html as html_lib
 import logging
 import pathlib
 from datetime import datetime, timezone
@@ -56,28 +57,30 @@ def _entity_pills(entities: dict) -> str:
     return " ".join(pills) or "<em style='color:#6c757d'>none</em>"
 
 
-def _topic_cell(topic_label: str, topic_relevance: float, topics: list[tuple[str, float]]) -> str:
-    """Render a single consolidated topic cell: label + relevance + keyword tooltip."""
-    if not topic_label or topic_label == "outlier":
-        return "<em style='color:#6c757d'>outlier</em>"
-
-    # Tooltip shows full keyword list with c-TF-IDF scores on hover
-    tooltip = ", ".join(f"{w} ({s:.3f})" for w, s in topics[:8]) if topics else ""
-
-    # Top 4 keywords inline (word only — scores in tooltip)
-    kw_text = " · ".join(w for w, _ in topics[:4]) if topics else ""
-
-    relevance_colour = "#1a7a3e" if topic_relevance >= 0.6 else (
-        "#856404" if topic_relevance >= 0.3 else "#6c757d"
-    )
-
-    return (
-        f'<span title="{tooltip}" style="cursor:help">'
-        f'<code style="font-size:0.78em">{topic_label}</code>'
-        f'</span><br>'
-        f'<small style="color:{relevance_colour};font-weight:bold">relevance: {topic_relevance:.2f}</small><br>'
-        f'<small style="color:#6c757d">{kw_text}</small>'
-    )
+def _justification_cell(event: CurationEvent) -> str:
+    """Render the LLM justification (or its absence) for a single event."""
+    meta = event.llm_metadata or {}
+    if event.llm_justification:
+        text = html_lib.escape(event.llm_justification)
+        latency = meta.get("latency_ms")
+        model = html_lib.escape(str(meta.get("model", "")))
+        footer = (
+            f'<small style="color:#6c757d">'
+            f'{model}{f" · {latency}ms" if latency else ""}'
+            f'</small>'
+        )
+        return (
+            f'<div style="white-space:pre-wrap;line-height:1.35;'
+            f'max-width:420px;font-size:0.85em">{text}</div>'
+            f'{footer}'
+        )
+    if meta.get("error"):
+        err = html_lib.escape(str(meta["error"]))
+        return (
+            f'<em style="color:#856404">ollama error</em><br>'
+            f'<small style="color:#6c757d">{err}</small>'
+        )
+    return "<em style='color:#6c757d'>below threshold</em>"
 
 
 def _render(events: list[CurationEvent], all_count: int, threshold: float) -> str:
@@ -100,11 +103,10 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
             f'<span title="SBOM text match (sbom_cve={bd.get("sbom_cve",0):.2f})">S:{bd.get("sbom",0):.2f}{cve_badge}</span> '
             f'<span title="Keyword phrases">K:{bd.get("keyword",0):.2f}</span> '
             f'<span title="IOC analysis">I:{bd.get("ioc",0):.2f}</span> '
-            f'<span title="Topic relevance">TR:{bd.get("topic",0):.2f}</span> '
             f'<span title="Technology">T:{bd.get("tech",0):.2f}</span> '
             f'<span title="Context">C:{bd.get("context",0):.2f}</span>'
         ) if bd else ""
-        topic_cell = _topic_cell(e.topic_label, e.topic_relevance_score, e.topics)
+        justification_cell = _justification_cell(e)
         ioc = e.ioc_summary
         total_iocs = sum(ioc.values())
         ioc_line = (
@@ -130,11 +132,11 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
             <code style="font-size:0.85em;font-weight:bold">{conf:.4f}</code><br>
             <small style="color:#6c757d;font-size:0.75em">{breakdown_html}</small>
           </td>
-          <td style="font-size:0.82em">{topic_cell}</td>
           <td style="font-size:0.82em">{ioc_line}</td>
           <td style="font-size:0.82em">{sbom_html}</td>
           <td style="font-size:0.82em">{', '.join(e.matched_profile_terms)}</td>
           <td style="font-size:0.82em">{_entity_pills(e.entities)}</td>
+          <td style="font-size:0.82em">{justification_cell}</td>
         </tr>""")
 
     return f"""<!DOCTYPE html>
@@ -176,9 +178,9 @@ Confidence threshold: {threshold}</p>
 <thead>
   <tr>
     <th>Band</th><th>Event ID</th><th>Date</th><th>Info</th>
-    <th>Confidence<br><small style="font-weight:normal">S=SBOM K=Kw I=IOC TR=Topic T=Tech C=Ctx</small></th>
-    <th>Topic<br><small style="font-weight:normal">hover for keywords</small></th>
+    <th>Confidence<br><small style="font-weight:normal">S=SBOM K=Kw I=IOC T=Tech C=Ctx</small></th>
     <th>IOCs</th><th>SBOM Hits</th><th>Matched Terms</th><th>NER Entities</th>
+    <th>LLM Justification</th>
   </tr>
 </thead>
 <tbody>

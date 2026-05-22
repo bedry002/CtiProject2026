@@ -9,7 +9,7 @@ Environment variables
 LLM_API_URL        : Chat completions endpoint (default: OpenAI).
 LLM_API_KEY        : Bearer token.
 LLM_MODEL          : Model name.
-LLM_TEMPERATURE    : Sampling temperature (default 0.0).
+LLM_TEMPERATURE    : Sampling temperature (default 0.4).
 LLM_MAX_TOKENS     : Max tokens in the response (default 512).
 LLM_TIMEOUT_SECONDS: HTTP timeout (default 30).
 LLM_BLEND_WEIGHT   : Weight given to LLM score when blending (default 0.2).

@@ -24,6 +24,7 @@ from config import (
     BUSINESS_PROFILE, SBOM_PROFILE, RAW_PROFILE, CONFIDENCE_THRESHOLD,
     PIPELINE_CONTINUE_ON_STAGE_ERROR,
     POLL_INTERVAL_SECONDS, POLL_STATE_PATH, POLL_RUN_ONCE,
+    POLL_LOOKBACK_HOURS, POLL_RESET_STATE,
 )
 
 REPORT_PATH = pathlib.Path(__file__).parent / "reports" / "curation_report.html"
@@ -77,11 +78,15 @@ def main() -> None:
     ingest = MISPIngestStage(MISP_URL, MISP_KEY, MISP_VERIFYCERT)
     pipeline = build_pipeline(misp_client)
 
+    if POLL_RESET_STATE and _STATE_FILE.exists():
+        _STATE_FILE.unlink()
+        logging.info("POLL_RESET_STATE=true — cleared poll state, starting fresh")
+
     last_seen = _load_last_seen()
 
     if last_seen is None:
-        last_seen = int(time.time()) - 86400  # 24 hours ago
-        logging.info("First run — starting from 24h ago (timestamp=%d), polling every %ds", last_seen, POLL_INTERVAL_SECONDS)
+        last_seen = int(time.time()) - (POLL_LOOKBACK_HOURS * 3600)
+        logging.info("First run — looking back %dh (timestamp=%d), polling every %ds", POLL_LOOKBACK_HOURS, last_seen, POLL_INTERVAL_SECONDS)
     else:
         logging.info("Resuming — last seen timestamp=%d, polling every %ds", last_seen, POLL_INTERVAL_SECONDS)
 

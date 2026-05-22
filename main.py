@@ -6,7 +6,7 @@ import time
 import urllib3
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -24,14 +24,12 @@ from config import (
     BUSINESS_PROFILE, SBOM_PROFILE, RAW_PROFILE, CONFIDENCE_THRESHOLD,
     PIPELINE_CONTINUE_ON_STAGE_ERROR,
     POLL_INTERVAL_SECONDS, POLL_STATE_PATH, POLL_RUN_ONCE,
-    POLL_LOOKBACK_HOURS, POLL_RESET_STATE,
+    POLL_LOOKBACK_HOURS, POLL_RESET_STATE, TAGGER_DRY_RUN,
 )
 
 REPORT_PATH = pathlib.Path(__file__).parent / "reports" / "curation_report.html"
 _STATE_FILE = pathlib.Path(POLL_STATE_PATH)
 
-# Set to False once the tags are confirmed correct
-TAGGER_DRY_RUN = True
 
 
 def _load_last_seen() -> int | None:

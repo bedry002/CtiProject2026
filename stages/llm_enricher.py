@@ -336,6 +336,7 @@ class LLMEnricherStage(Stage):
                     headers={
                         "Content-Type": "application/json",
                         "Authorization": f"Bearer {self._api_key}",
+                        "User-Agent": "Mozilla/5.0 (compatible; cti-curator/1.0)",
                     },
                     method="POST",
                 )

@@ -2,7 +2,7 @@
 import os
 import json
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(override=True)
 import pathlib
 from stages.scoring import BusinessProfile
 from pipeline.sbom import load_sbom
@@ -126,3 +126,4 @@ POLL_STATE_PATH = os.getenv("POLL_STATE_PATH", "data/poll_state.txt")
 POLL_RUN_ONCE = os.getenv("POLL_RUN_ONCE", "false").strip().lower() == "true"
 POLL_LOOKBACK_HOURS = int(os.getenv("POLL_LOOKBACK_HOURS", "24"))
 POLL_RESET_STATE = os.getenv("POLL_RESET_STATE", "false").strip().lower() == "true"
+TAGGER_DRY_RUN = os.getenv("TAGGER_DRY_RUN", "true").strip().lower() == "true"

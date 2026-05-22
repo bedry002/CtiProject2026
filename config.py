@@ -123,3 +123,4 @@ CONFIDENCE_THRESHOLD = 0.20
 # Polling loop
 POLL_INTERVAL_SECONDS = int(os.getenv("POLL_INTERVAL_SECONDS", "30"))
 POLL_STATE_PATH = os.getenv("POLL_STATE_PATH", "data/poll_state.txt")
+POLL_RUN_ONCE = os.getenv("POLL_RUN_ONCE", "false").strip().lower() == "true"

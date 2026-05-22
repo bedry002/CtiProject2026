@@ -23,7 +23,7 @@ from config import (
     MISP_URL, MISP_KEY, MISP_VERIFYCERT,
     BUSINESS_PROFILE, SBOM_PROFILE, RAW_PROFILE, CONFIDENCE_THRESHOLD,
     PIPELINE_CONTINUE_ON_STAGE_ERROR,
-    POLL_INTERVAL_SECONDS, POLL_STATE_PATH,
+    POLL_INTERVAL_SECONDS, POLL_STATE_PATH, POLL_RUN_ONCE,
 )
 
 REPORT_PATH = pathlib.Path(__file__).parent / "reports" / "curation_report.html"
@@ -109,6 +109,10 @@ def main() -> None:
 
         _save_last_seen(poll_start)
         last_seen = poll_start
+
+        if POLL_RUN_ONCE:
+            logging.info("POLL_RUN_ONCE=true — exiting after single batch")
+            break
 
         logging.info("Next poll in %ds", POLL_INTERVAL_SECONDS)
         time.sleep(POLL_INTERVAL_SECONDS)

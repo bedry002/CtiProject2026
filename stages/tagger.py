@@ -86,7 +86,7 @@ class MISPTaggerStage(Stage):
             misp_event = self.client.get_event(event_uuid, pythonify=True)
             for tag in misp_event.tags:
                 if tag.name.startswith("curation:"):
-                    self.client.untag(event_uuid, tag.name)
+                    self.client.untag(misp_event.id, tag.name)
                     logger.debug("Removed old tag '%s' from event %s", tag.name, event_uuid)
         except Exception as e:
             logger.error("Failed to remove old tags from event %s: %s", event_uuid, e)
@@ -201,7 +201,7 @@ class MISPTaggerStage(Stage):
 
         try:
             # UUID is required by MISP's tag/untag API — numeric ID causes 500
-            uuid = event.misp_uuid or event.raw.get("uuid", event.misp_id)
+            uuid = event.misp_uuid
 
             self._remove_old_curation_tags(uuid)
             self.client.tag(uuid, tag)

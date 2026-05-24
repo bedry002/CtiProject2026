@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+from pipeline.constants import SKIP_TECH_VALUES
 from pipeline.sbom import load_sbom
 from stages.scoring import BusinessProfile
 
@@ -21,14 +22,6 @@ PIPELINE_CONTINUE_ON_STAGE_ERROR = os.getenv("PIPELINE_CONTINUE_ON_STAGE_ERROR",
 _BASE         = pathlib.Path(__file__).parent / "Assets"
 _PROFILE_PATH = _BASE / "Test-bed Profile.json"
 _SBOM_PATH    = _BASE / "SBOM.json"
-
-_SKIP_TECH_VALUES = {
-    "n/a", "none", "true", "false", "hybrid", "basic",
-    "intermediate", "advanced", "co-managed", "in-house",
-    "on-prem", "public", "private", "current", "offline",
-    "partial", "significant", "minimal", "internal_only",
-}
-
 
 def _tech_from_profile(data: dict) -> list[str]:
     """Walk technology_stack and collect ≤4-word strings as product names; ≥5 words are policy prose."""
@@ -47,7 +40,7 @@ def _tech_from_profile(data: dict) -> list[str]:
             if (s
                     and len(s) > 2
                     and len(s.split()) <= 4
-                    and s_lower not in _SKIP_TECH_VALUES
+                    and s_lower not in SKIP_TECH_VALUES
                     and not s[0].isdigit()):
                 terms.append(s_lower)
 

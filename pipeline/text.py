@@ -9,6 +9,15 @@ _TEXT_FIELDS = ("info", "description")
 _TEXT_ATTR_TYPES = frozenset({"text", "comment", "vulnerability"})
 
 
+def entity_texts(entities: dict, key: str) -> list[str]:
+    """Extract text strings from a specific key in an entities dict."""
+    return [
+        (item.get("text", "") if isinstance(item, dict) else str(item))
+        for item in entities.get(key, [])
+        if item
+    ]
+
+
 def event_to_text(raw: dict[str, Any]) -> str:
     """Build a single text string from all relevant fields of a MISP event dict."""
     return " ".join(filter(None, chain(

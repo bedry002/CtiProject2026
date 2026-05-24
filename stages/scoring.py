@@ -36,10 +36,6 @@ class ScoringWeights:
         assert abs(total - 1.0) < 1e-6, f"Weights must sum to 1.0, got {total}"
 
 
-BAND_HIGH   = 0.50
-BAND_MEDIUM = 0.25
-BAND_LOW    = 0.10
-
 _VULN_TYPES    = frozenset({"vulnerability"})
 _NETWORK_TYPES = frozenset({"hostname", "domain", "domain|ip", "url", "uri",
                              "ip-src", "ip-dst", "ip-src|port", "ip-dst|port"})

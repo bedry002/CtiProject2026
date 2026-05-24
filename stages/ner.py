@@ -14,12 +14,14 @@ from pathlib import Path
 from typing import Any
 
 from pipeline.base import Stage
+from pipeline.constants import SKIP_TECH_VALUES
 from pipeline.event import CurationEvent
+from pipeline.sbom import parse_cpe_product
 from pipeline.text import event_to_text
 
 logger = logging.getLogger(__name__)
 
-# ── Configuration ────────────────────────────────────────────────────────────
+#  Configuration 
 
 PROFILE_PATH            = os.environ.get("ORG_PROFILE_PATH", "Assets/Test-bed Profile.json")
 SBOM_PATH               = os.environ.get("ORG_SBOM_PATH", "Assets/SBOM.json")
@@ -30,7 +32,7 @@ NER_DOC_SCOPED_ONLY     = os.environ.get("NER_DOC_SCOPED_ONLY", "false").strip()
 
 _SPACY_FALLBACK_MODELS = ["en_core_web_lg", "en_core_web_md", "en_core_web_sm"]
 
-# ── Pre-compiled patterns ────────────────────────────────────────────────────
+#  Pre-compiled patterns 
 
 CVE_PATTERN    = re.compile(r"CVE-\d{4}-\d{4,7}", re.IGNORECASE)
 TTP_PATTERN    = re.compile(r"T\d{4}(?:\.\d{3})?")
@@ -47,7 +49,7 @@ EXPLOIT_CONTEXT_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# ── Org asset model ──────────────────────────────────────────────────────────
+#  Org asset model 
 
 @dataclass(frozen=True)
 class OrgAssets:
@@ -97,16 +99,9 @@ def _build_org_assets(profile_path: Path, sbom_path: Path) -> OrgAssets:
             data = json.loads(profile_path.read_text(encoding="utf-8"))
             org  = data.get("organisation", {})
 
-            _SKIP = {
-                "n/a", "none", "true", "false", "hybrid", "basic", "intermediate",
-                "advanced", "co-managed", "in-house", "on-prem", "public", "private",
-                "production", "staging", "development", "internal_only", "partial",
-                "minimal", "significant",
-            }
-
             def _add_tech(value: str, max_words: int = 8) -> None:
                 s = value.strip()
-                if s and len(s) > 2 and len(s.split()) <= max_words and s.lower() not in _SKIP and not s[0].isdigit():
+                if s and len(s) > 2 and len(s.split()) <= max_words and s.lower() not in SKIP_TECH_VALUES and not s[0].isdigit():
                     technologies.add(s.lower())
 
             def _walk_tech(obj: object) -> None:
@@ -155,11 +150,9 @@ def _build_org_assets(profile_path: Path, sbom_path: Path) -> OrgAssets:
                         threat_actors.add(a)
 
             for cpe in data.get("cpe_list", []):
-                parts = cpe.split(":")
-                if len(parts) >= 5:
-                    product = re.sub(r"[_\-]", " ", parts[4]).strip().lower()
-                    if product and product != "*":
-                        cpe_products.add(product)
+                product = parse_cpe_product(cpe)
+                if product:
+                    cpe_products.add(product)
 
             logger.info(
                 "org_profile_loaded sectors=%d geographies=%d technologies=%d cpes=%d threat_actors=%d",
@@ -189,7 +182,7 @@ def _get_org_assets(profile_path: Path, sbom_path: Path) -> OrgAssets:
         _org_asset_cache[cache_key] = assets
         return assets
 
-# ── Shared helpers ────────────────────────────────────────────────────────────
+#  Shared helpers 
 
 def _download_spacy_model(model: str) -> bool:
     import subprocess as _sp
@@ -227,6 +220,10 @@ def _first_term_span(text: str, term: str) -> tuple[int, int] | None:
     return (idx, idx + len(term)) if idx != -1 else None
 
 
+def _is_term_match(value_lower: str, terms: frozenset[str], min_len: int) -> bool:
+    return value_lower in terms or any(len(t) >= min_len and t in value_lower for t in terms)
+
+
 def _is_private_ip(ip: str) -> bool:
     parts = ip.split(".")
     if len(parts) != 4:
@@ -237,7 +234,7 @@ def _is_private_ip(ip: str) -> bool:
         return False
     return (a == 10) or (a == 172 and 16 <= b <= 31) or (a == 192 and b == 168) or (a == 127)
 
-# ── NERStage ─────────────────────────────────────────────────────────────────
+# NERStage 
 
 class NERStage(Stage):
     """Extracts named entities from event text focusing on organisation-specific assets."""
@@ -334,7 +331,7 @@ class NERStage(Stage):
         )
         return event
 
-    # ── Internal NLP ──────────────────────────────────────────────────────────
+    #  Internal NLP 
 
     def _get_nlp(self) -> Any:
         with self._nlp_lock:
@@ -475,19 +472,13 @@ class NERStage(Stage):
         return entities
 
     def _is_org_software_match(self, value_lower: str) -> bool:
-        if value_lower in self._all_tech_terms:
-            return True
-        return any(len(t) > 3 and t in value_lower for t in self._all_tech_terms)
+        return _is_term_match(value_lower, self._all_tech_terms, 4)
 
     def _is_org_geography_match(self, value_lower: str) -> bool:
-        if value_lower in self._org_geographies:
-            return True
-        return any(len(geo) >= 4 and geo in value_lower for geo in self._org_geographies)
+        return _is_term_match(value_lower, self._org_geographies, 4)
 
     def _is_org_threat_actor_match(self, value_lower: str) -> bool:
-        if value_lower in self._org_threat_actors:
-            return True
-        return any(len(actor) >= 3 and actor in value_lower for actor in self._org_threat_actors)
+        return _is_term_match(value_lower, self._org_threat_actors, 3)
 
     def _extract_relevant_chunks(self, text: str, context_window: int = 200) -> list[tuple[str, int]]:
         text_lower = text.lower()

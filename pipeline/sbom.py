@@ -20,11 +20,12 @@ _THREAT_VERBS = (
 )
 
 
-def _cpe_product(cpe: str) -> str | None:
-    """Extract the product field from a CPE 2.3 URI and normalise it."""
+def parse_cpe_product(cpe: str) -> str | None:
+    """Extract and normalise the product field from a CPE 2.3 URI. Returns None for wildcards."""
     parts = cpe.split(":")
     if len(parts) >= 5:
-        return _STRIP.sub(" ", parts[4]).lower().strip()
+        product = _STRIP.sub(" ", parts[4]).lower().strip()
+        return product if product and product != "*" else None
     return None
 
 
@@ -63,7 +64,7 @@ class SBOMComponent:
         _add(self.name)
 
         if self.cpe:
-            prod = _cpe_product(self.cpe)
+            prod = parse_cpe_product(self.cpe)
             if prod:
                 _add(prod)
 

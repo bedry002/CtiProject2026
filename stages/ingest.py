@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import cast
 
 from pymisp import MISPEvent, PyMISP
@@ -15,7 +16,8 @@ logger = logging.getLogger(__name__)
 # Events with more attributes than this are almost certainly bulk IOC feeds
 # (e.g. PhishTank with 60k attributes, MalwareBazaar hash dumps).
 _MAX_ATTRIBUTE_COUNT = 200
-_PAGE_SIZE = 500
+_PAGE_SIZE           = 500
+_FETCH_WORKERS       = 10  # concurrent MISP connections — matches requests connection pool size
 
 
 class MISPIngestStage(Stage):
@@ -72,13 +74,21 @@ class MISPIngestStage(Stage):
             len(candidate_ids), len(stubs), skipped,
         )
 
+        def _fetch(misp_id: str, misp_uuid: str) -> CurationEvent:
+            full = self._client.get_event(misp_id, pythonify=True)
+            return CurationEvent(misp_id=misp_id, misp_uuid=misp_uuid, raw=full.to_dict())
+
         events: list[CurationEvent] = []
-        for misp_id, misp_uuid in candidate_ids:
-            try:
-                full = self._client.get_event(misp_id, pythonify=True)
-                events.append(CurationEvent(misp_id=misp_id, misp_uuid=misp_uuid, raw=full.to_dict()))
-            except Exception as exc:
-                logger.warning("Failed to fetch event %s: %s", misp_id, exc)
+        with ThreadPoolExecutor(max_workers=_FETCH_WORKERS) as pool:
+            futures = {
+                pool.submit(_fetch, misp_id, misp_uuid): misp_id
+                for misp_id, misp_uuid in candidate_ids
+            }
+            for future in as_completed(futures):
+                try:
+                    events.append(future.result())
+                except Exception as exc:
+                    logger.warning("Failed to fetch event %s: %s", futures[future], exc)
 
         logger.info("Fetched %d full events", len(events))
         return events

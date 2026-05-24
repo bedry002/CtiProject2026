@@ -10,13 +10,20 @@ class TestNerMatching(unittest.TestCase):
             profile_path="does-not-exist.json",
             sbom_path="does-not-exist.json",
         )
-        self.stage._org_software = set()
-        self.stage._org_technologies = {"active"}
-        self.stage._org_sectors = {"retail"}
-        self.stage._org_geographies = set()
-        self.stage._org_cpe_products = set()
+        self.stage._org_software      = set()
+        self.stage._org_technologies  = {"active"}
+        self.stage._org_sectors       = {"retail"}
+        self.stage._org_geographies   = set()
+        self.stage._org_cpe_products  = set()
         self.stage._org_threat_actors = {"apt29"}
         self.stage._org_sbom_term_map = {}
+        # _regex_entities and _extract_relevant_chunks read from precomputed sets,
+        # not the raw _org_* attributes — update them to match the patched state.
+        self.stage._all_tech_terms        = frozenset({"active"})
+        self.stage._remaining_terms       = frozenset({"active"})
+        self.stage._sorted_extract_terms  = sorted(
+            frozenset({"active"}) | frozenset({"apt29"}), key=len, reverse=True
+        )
 
     def test_term_boundary_prevents_substring_false_positive(self) -> None:
         entities = self.stage._regex_entities("proactive monitoring in operations")
@@ -27,7 +34,10 @@ class TestNerMatching(unittest.TestCase):
         self.assertTrue(any(item.get("text") == "active" for item in entities.get("software", [])))
 
     def test_extract_relevant_chunks_returns_text_and_offset(self) -> None:
-        self.stage._org_technologies = {"esxi"}
+        self.stage._org_technologies     = {"esxi"}
+        self.stage._all_tech_terms       = frozenset({"esxi"})
+        self.stage._remaining_terms      = frozenset({"esxi"})
+        self.stage._sorted_extract_terms = ["esxi"]
         chunks = self.stage._extract_relevant_chunks("prefix text about esxi and more", context_window=5)
 
         self.assertTrue(chunks)

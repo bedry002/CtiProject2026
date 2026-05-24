@@ -7,15 +7,12 @@ import logging
 from pymisp import MISPAttribute, MISPEvent, MISPTag, PyMISP
 
 from pipeline.base import Stage
+from pipeline.constants import BAND_HIGH, BAND_MEDIUM, BAND_LOW
 from pipeline.event import CurationEvent
 
 logger = logging.getLogger(__name__)
 
 TAG_NAMESPACE = "curation"
-
-BAND_HIGH   = 0.50
-BAND_MEDIUM = 0.25
-BAND_LOW    = 0.10
 
 
 def get_relevance_tag(confidence: float) -> str:

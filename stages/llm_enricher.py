@@ -27,6 +27,7 @@ from urllib.error import URLError
 
 from pipeline.base import Stage
 from pipeline.event import CurationEvent
+from pipeline.text import entity_texts as _entity_texts
 
 logger = logging.getLogger(__name__)
 
@@ -77,14 +78,6 @@ _FALLBACK: dict[str, Any] = {
     "matched_dimensions": [],
     "implicit_relevance_flags": [],
 }
-
-
-def _entity_texts(entities: dict, key: str) -> list[str]:
-    return [
-        (item.get("text", "") if isinstance(item, dict) else str(item))
-        for item in entities.get(key, [])
-        if item
-    ]
 
 
 def _sanitise_cti_text(raw_text: str) -> str:

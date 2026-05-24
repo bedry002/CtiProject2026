@@ -83,7 +83,7 @@ class TestScoringIntegration(unittest.TestCase):
 
         self.assertIn("comp-esxi", scored.matched_sbom_components)
         self.assertIn("comp-nginx", scored.matched_sbom_components)
-        self.assertGreater(scored.score_breakdown.get("sbom", 0.0), 0.0)
+        self.assertGreater(scored.score_breakdown.get("asset", 0.0), 0.0)
 
 
 if __name__ == "__main__":

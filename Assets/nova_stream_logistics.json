@@ -1,0 +1,62 @@
+{
+  "profile_id": "uuid-v4-novastream-logistics-2026-002",
+  "profile_version": "2.0",
+  "created": "2026-05-18T00:00:00Z",
+  "modified": "2026-05-24T00:00:00Z",
+  "organisation": {
+    "name": "Nova Stream Logistical Global",
+    "naics_code": "4841",
+    "jurisdiction": ["US", "DE", "SG"],
+    "headquarters": "Rotterdam, Netherlands"
+  },
+  "sectors": [
+    "logistics", "freight", "transportation", "warehousing",
+    "supply chain", "customs compliance", "last mile delivery",
+    "cold chain", "fleet management"
+  ],
+  "technologies": [
+    "windows 11", "ubuntu 22.04", "windows server 2022",
+    "vmware esxi", "vmware vsphere",
+    "crowdstrike falcon",
+    "microsoft intune", "android enterprise",
+    "microsoft entra id", "active directory", "cyberark",
+    "palo alto", "globalprotect", "zscaler",
+    "aws", "google cloud", "gcp",
+    "eks", "gke",
+    "nginx", "envoy",
+    "postgresql", "dynamodb", "bigquery",
+    "sap s4hana",
+    "microsoft 365", "exchange online",
+    "docker", "kubernetes",
+    "github actions", "jenkins", "jfrog artifactory",
+    "splunk", "splunk soar", "servicenow",
+    "qualys", "recorded future"
+  ],
+  "geographies": [
+    "rotterdam", "netherlands", "amsterdam",
+    "germany", "frankfurt", "berlin",
+    "singapore",
+    "united states", "us",
+    "europe", "eu"
+  ],
+  "threat_actors": [
+    "lockbit", "apt41", "unc3944"
+  ],
+  "keywords": [
+    "cargo theft", "shipment diversion", "freight invoice fraud",
+    "fleet telematics", "gps spoofing",
+    "customs data manipulation", "trade document fraud",
+    "warehouse management system", "barcode scanner compromise",
+    "ot attack", "ics attack", "industrial control system",
+    "logistics platform", "transport management system",
+    "sap compromise", "erp attack"
+  ],
+  "cpe_list": [
+    "cpe:2.3:o:microsoft:windows_11:*:*:*:*:*:*:*:*",
+    "cpe:2.3:o:canonical:ubuntu_linux:22.04:*:*:*:lts:*:*:*",
+    "cpe:2.3:o:microsoft:windows_server_2022:*:*:*:*:*:*:*:*",
+    "cpe:2.3:a:vmware:vsphere:8.*:*:*:*:*:*:*:*",
+    "cpe:2.3:a:paloaltonetworks:pan-os:11.*:*:*:*:*:*:*:*",
+    "cpe:2.3:a:sap:s4hana:*:*:*:*:*:*:*:*"
+  ]
+}

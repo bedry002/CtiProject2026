@@ -13,7 +13,7 @@ class TestNerProfileAssets(unittest.TestCase):
 
         self.assertIn("fin7", assets.threat_actors)
         self.assertIn("scattered spider", assets.threat_actors)
-        self.assertIn("vmware esxi hypervisor", assets.technologies)
+        self.assertIn("vmware esxi", assets.technologies)
 
     def test_vanguard_profile_loads_watchlist_and_os_terms(self) -> None:
         assets = _build_org_assets(

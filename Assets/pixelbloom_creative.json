@@ -1,0 +1,54 @@
+{
+  "profile_id": "uuid-v4-pixelbloom-creative-2026-004",
+  "profile_version": "2.0",
+  "created": "2026-05-18T00:00:00Z",
+  "modified": "2026-05-24T00:00:00Z",
+  "organisation": {
+    "name": "PixelBloom Creative Agency",
+    "naics_code": "5418",
+    "jurisdiction": ["US"],
+    "headquarters": "Austin, Texas, United States"
+  },
+  "sectors": [
+    "creative agency", "advertising", "digital marketing",
+    "media production", "design", "content creation"
+  ],
+  "technologies": [
+    "macos", "windows 11", "ubuntu",
+    "apple business manager",
+    "google workspace", "gmail",
+    "google cloud", "gcp", "cloud run",
+    "ubiquiti unifi", "wireguard",
+    "adobe creative cloud",
+    "hubspot",
+    "nginx",
+    "postgresql",
+    "github actions", "docker",
+    "asana", "jira",
+    "openvas",
+    "synology nas",
+    "google drive"
+  ],
+  "geographies": [
+    "austin", "texas", "united states", "us"
+  ],
+  "threat_actors": [
+    "lumma", "blackbasta", "ta558"
+  ],
+  "keywords": [
+    "infostealer", "stealer malware",
+    "macos malware", "macos backdoor",
+    "google workspace takeover", "google account compromise",
+    "saas account takeover", "oauth token theft",
+    "adobe credential theft",
+    "creative asset theft", "client data theft",
+    "phishing", "spear phishing"
+  ],
+  "cpe_list": [
+    "cpe:2.3:o:apple:macos:14:*:*:*:*:*:*:*",
+    "cpe:2.3:o:microsoft:windows_11:*:*:*:*:*:*:*:*",
+    "cpe:2.3:o:canonical:ubuntu_linux:22.04:*:*:*:lts:*:*:*",
+    "cpe:2.3:a:ubiquiti:unifi_network_application:*:*:*:*:*:*:*:*",
+    "cpe:2.3:a:nginx:nginx:*:*:*:*:*:*:*:*"
+  ]
+}

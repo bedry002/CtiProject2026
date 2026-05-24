@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Any
 
 from pipeline.base import Stage
-from pipeline.constants import SKIP_TECH_VALUES
 from pipeline.event import CurationEvent
 from pipeline.sbom import parse_cpe_product
 from pipeline.text import event_to_text
@@ -97,57 +96,26 @@ def _build_org_assets(profile_path: Path, sbom_path: Path) -> OrgAssets:
     if profile_path.exists():
         try:
             data = json.loads(profile_path.read_text(encoding="utf-8"))
-            org  = data.get("organisation", {})
 
-            def _add_tech(value: str, max_words: int = 8) -> None:
-                s = value.strip()
-                if s and len(s) > 2 and len(s.split()) <= max_words and s.lower() not in SKIP_TECH_VALUES and not s[0].isdigit():
-                    technologies.add(s.lower())
+            for s in data.get("sectors", []):
+                v = s.strip().lower()
+                if v:
+                    sectors.add(v)
 
-            def _walk_tech(obj: object) -> None:
-                if isinstance(obj, dict):
-                    for v in obj.values():
-                        _walk_tech(v)
-                elif isinstance(obj, list):
-                    for item in obj:
-                        _walk_tech(item)
-                elif isinstance(obj, str):
-                    _add_tech(obj)
+            for t in data.get("technologies", []):
+                v = t.strip().lower()
+                if len(v) >= 3:
+                    technologies.add(v)
 
-            for func in org.get("critical_business_functions", []):
-                sectors.add(func.lower())
+            for g in data.get("geographies", []):
+                v = g.strip().lower()
+                if len(v) >= 3:
+                    geographies.add(v)
 
-            for part in org.get("primary_headquarters", "").split(","):
-                part = part.strip()
-                if len(part) >= 4:
-                    geographies.add(part.lower())
-
-            _walk_tech(data.get("technology_stack", {}))
-
-            for item in data.get("risk_profile", {}).get("priority_asset_classes", []):
-                if isinstance(item, str):
-                    _add_tech(item, max_words=10)
-
-            for item in data.get("asset_exposure", {}).get("critical_assets", []):
-                if isinstance(item, dict):
-                    name = item.get("name", "")
-                    if isinstance(name, str):
-                        _add_tech(name, max_words=10)
-
-            for item in data.get("os_inventory", []):
-                if isinstance(item, dict):
-                    os_name    = item.get("name", "")
-                    os_version = item.get("version", "")
-                    if isinstance(os_name, str):
-                        _add_tech(os_name, max_words=6)
-                    if isinstance(os_name, str) and isinstance(os_version, str) and os_version:
-                        _add_tech(f"{os_name} {os_version}", max_words=8)
-
-            for actor in data.get("threat_actor_watch_list", []):
-                if isinstance(actor, str):
-                    a = actor.strip().lower()
-                    if len(a) >= 3:
-                        threat_actors.add(a)
+            for actor in data.get("threat_actors", []):
+                v = actor.strip().lower()
+                if len(v) >= 3:
+                    threat_actors.add(v)
 
             for cpe in data.get("cpe_list", []):
                 product = parse_cpe_product(cpe)
@@ -222,6 +190,10 @@ def _first_term_span(text: str, term: str) -> tuple[int, int] | None:
 
 def _is_term_match(value_lower: str, terms: frozenset[str], min_len: int) -> bool:
     return value_lower in terms or any(len(t) >= min_len and t in value_lower for t in terms)
+
+
+_ATTR_NETWORK_TYPES = frozenset({"ip-src", "ip-dst", "domain", "hostname", "url"})
+_ATTR_FILE_TYPES    = frozenset({"md5", "sha256", "sha1"})
 
 
 def _is_private_ip(ip: str) -> bool:
@@ -325,11 +297,31 @@ class NERStage(Stage):
         entities.setdefault("threat_actors", [])
         entities["_raw_text"] = text
         event.entities = entities
+        self._extract_attribute_iocs(event)
         logger.debug(
             "Event %s entities: %s",
             event.misp_id, {k: len(v) for k, v in entities.items() if isinstance(v, list)},
         )
         return event
+
+    def _extract_attribute_iocs(self, event: CurationEvent) -> None:
+        """Populate entities from MISP attribute IOCs — catches indicators stored as attributes, not in text."""
+        ioc_count = len(event.entities.get("iocs", []))
+        cve_count = len(event.entities.get("cves", []))
+        for attr in event.raw.get("Attribute", []):
+            attr_type = attr.get("type", "")
+            value     = str(attr.get("value", "")).strip()
+            if not value:
+                continue
+            if attr_type == "vulnerability" and CVE_PATTERN.match(value) and cve_count < 10:
+                _append_unique(event.entities, "cves", {"text": value, "source": "attribute"})
+                cve_count += 1
+            elif attr_type in _ATTR_NETWORK_TYPES and ioc_count < 10:
+                _append_unique(event.entities, "iocs", {"text": value, "type": attr_type, "confidence": 1.0})
+                ioc_count += 1
+            elif attr_type in _ATTR_FILE_TYPES and ioc_count < 10:
+                _append_unique(event.entities, "iocs", {"text": value, "type": attr_type, "confidence": 1.0})
+                ioc_count += 1
 
     #  Internal NLP 
 

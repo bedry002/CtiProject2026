@@ -21,7 +21,7 @@ from config import (
     BUSINESS_PROFILE, SBOM_PROFILE, RAW_PROFILE, CONFIDENCE_THRESHOLD,
     PIPELINE_CONTINUE_ON_STAGE_ERROR,
     POLL_INTERVAL_SECONDS, POLL_STATE_PATH, POLL_RUN_ONCE,
-    POLL_LOOKBACK_HOURS, POLL_RESET_STATE, TAGGER_DRY_RUN,
+    POLL_LOOKBACK_HOURS, POLL_RESET_STATE, TAGGER_DRY_RUN, LLM_SKIP,
 )
 from pipeline.runner import Pipeline
 from stages.ingest import MISPIngestStage
@@ -37,7 +37,7 @@ _STATE_FILE = pathlib.Path(POLL_STATE_PATH)
 _LLM_PROFILE_CTX = {
     "sectors": BUSINESS_PROFILE.sectors,
     "technologies": BUSINESS_PROFILE.technologies,
-    "threat_actor_watchlist": RAW_PROFILE.get("threat_actor_watch_list", []),
+    "threat_actor_watchlist": RAW_PROFILE.get("threat_actors", []),
     "component_versions": {
         c.bom_ref: {"name": c.name, "version": c.version, "criticality": c.criticality}
         for c in (SBOM_PROFILE.components if SBOM_PROFILE else [])
@@ -60,13 +60,16 @@ def _save_last_seen(timestamp: int) -> None:
 
 
 def build_pipeline(misp_client: PyMISP) -> Pipeline:
-    return Pipeline([
+    if LLM_SKIP:
+        logging.info("LLM_SKIP=true — LLM enrichment stage disabled")
+    stages = [
         NERStage(),
         ScoringStage(BUSINESS_PROFILE, SBOM_PROFILE, threshold=CONFIDENCE_THRESHOLD),
-        LLMEnricherStage(profile_context=_LLM_PROFILE_CTX, min_confidence=CONFIDENCE_THRESHOLD),
+        *([] if LLM_SKIP else [LLMEnricherStage(profile_context=_LLM_PROFILE_CTX, min_confidence=CONFIDENCE_THRESHOLD)]),
         MISPTaggerStage(misp_client, dry_run=TAGGER_DRY_RUN),
         ReportStage(REPORT_PATH, threshold=CONFIDENCE_THRESHOLD),
-    ], continue_on_stage_error=PIPELINE_CONTINUE_ON_STAGE_ERROR)
+    ]
+    return Pipeline(stages, continue_on_stage_error=PIPELINE_CONTINUE_ON_STAGE_ERROR)
 
 
 def main() -> None:

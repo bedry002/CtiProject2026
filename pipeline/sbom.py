@@ -13,6 +13,15 @@ _DEFAULT_WEIGHT = 0.4
 
 _STRIP = re.compile(r"[_\-]")
 
+_BIGRAM_STOP_WORDS = frozenset({
+    "a", "an", "the", "and", "or", "in", "of", "to", "at", "by",
+    "for", "from", "on", "with", "is", "are", "was", "were", "be",
+    "been", "being", "have", "has", "had", "do", "does", "did",
+    "will", "would", "could", "should", "may", "might", "can",
+    "it", "its", "this", "that", "not", "no", "as", "if", "so",
+    "but", "also", "into", "than", "more", "less", "any", "all",
+})
+
 _THREAT_VERBS = (
     "exploit", "vulnerability", "cve", "attack", "compromise",
     "brute force", "privilege escalation", "remote code execution",
@@ -133,7 +142,7 @@ class SBOMProfile:
             words = re.findall(r"\b[a-z][a-z0-9\-]{2,}\b", risk.description.lower())
             for i in range(len(words) - 1):
                 bigram = f"{words[i]} {words[i + 1]}"
-                if bigram not in seen:
+                if bigram not in seen and not all(w in _BIGRAM_STOP_WORDS for w in bigram.split()):
                     seen.add(bigram)
                     phrases.append(bigram)
 

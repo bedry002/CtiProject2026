@@ -1,0 +1,240 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:d4e5f6a7-1b2c-4d03-b8e7-f4a5b6c7d8e9",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-05-18T00:00:00Z",
+    "tools": [{ "vendor": "Anchore", "name": "Syft", "version": "1.20.0" }],
+    "authors": [{ "name": "Nova Stream Logistical Global – Security Operations" }],
+    "component": {
+      "type": "application",
+      "bom-ref": "nova-stream-environment",
+      "name": "Nova Stream Logistical Global – Production Environment",
+      "version": "2026.05",
+      "description": "Multi-cloud logistics platform spanning VMware virtualisation, Palo Alto/Zscaler network stack, SAP S/4HANA ERP, Android enterprise warehouse handhelds, AWS/GCP container workloads, and Splunk SIEM.",
+      "supplier": { "name": "Nova Stream Logistical Global" }
+    }
+  },
+  "components": [
+    {
+      "type": "application",
+      "bom-ref": "sap-s4hana",
+      "name": "SAP S/4HANA",
+      "version": "2023",
+      "cpe": "cpe:2.3:a:sap:s4hana:2023:*:*:*:*:*:*:*",
+      "supplier": { "name": "SAP" },
+      "properties": [
+        { "name": "asset.role",  "value": "erp_freight_operations" },
+        { "name": "criticality", "value": "high" },
+        { "name": "match_alias", "value": "sap" },
+        { "name": "match_alias", "value": "s4hana" }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "android-enterprise-handhelds",
+      "name": "Android Enterprise",
+      "version": "13",
+      "cpe": "cpe:2.3:o:google:android:13:*:*:*:*:*:*:*",
+      "supplier": { "name": "Google" },
+      "properties": [
+        { "name": "asset.role",  "value": "warehouse_handheld_scanner" },
+        { "name": "asset.group", "value": "Warehouse Handhelds" },
+        { "name": "criticality", "value": "high" },
+        { "name": "match_alias", "value": "android" }
+      ]
+    },
+    {
+      "type": "platform",
+      "bom-ref": "vmware-esxi-nova",
+      "name": "VMware ESXi",
+      "version": "8.0",
+      "cpe": "cpe:2.3:o:vmware:esxi:8.*:*:*:*:*:*:*:*",
+      "supplier": { "name": "VMware" },
+      "properties": [
+        { "name": "asset.role",  "value": "hypervisor" },
+        { "name": "criticality", "value": "high" }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "paloalto-ngfw-nova",
+      "name": "Palo Alto PAN-OS",
+      "version": "11.1",
+      "cpe": "cpe:2.3:o:paloaltonetworks:pan-os:11.*:*:*:*:*:*:*:*",
+      "supplier": { "name": "Palo Alto Networks" },
+      "properties": [
+        { "name": "asset.role",  "value": "perimeter_firewall" },
+        { "name": "criticality", "value": "high" },
+        { "name": "match_alias", "value": "palo alto" },
+        { "name": "match_alias", "value": "globalprotect" }
+      ]
+    },
+    {
+      "type": "application",
+      "bom-ref": "zscaler-proxy",
+      "name": "Zscaler Internet Access",
+      "version": "current",
+      "supplier": { "name": "Zscaler" },
+      "properties": [
+        { "name": "asset.role",  "value": "secure_web_gateway" },
+        { "name": "criticality", "value": "medium" },
+        { "name": "match_alias", "value": "zscaler" }
+      ]
+    },
+    {
+      "type": "operating-system",
+      "bom-ref": "ubuntu-core-services",
+      "name": "Ubuntu Linux",
+      "version": "22.04 LTS",
+      "cpe": "cpe:2.3:o:canonical:ubuntu_linux:22.04:*:*:*:lts:*:*:*",
+      "supplier": { "name": "Canonical" },
+      "properties": [
+        { "name": "asset.role",  "value": "core_logistics_services" },
+        { "name": "criticality", "value": "high" },
+        { "name": "match_alias", "value": "ubuntu" }
+      ]
+    },
+    {
+      "type": "operating-system",
+      "bom-ref": "windows-server-nova",
+      "name": "Windows Server 2022",
+      "version": "21H2",
+      "cpe": "cpe:2.3:o:microsoft:windows_server_2022:*:*:*:*:*:*:*:*",
+      "supplier": { "name": "Microsoft" },
+      "properties": [
+        { "name": "asset.role",  "value": "distribution_centre_server" },
+        { "name": "criticality", "value": "high" }
+      ]
+    },
+    {
+      "type": "platform",
+      "bom-ref": "aws-eks-nova",
+      "name": "Amazon EKS",
+      "version": "1.30",
+      "cpe": "cpe:2.3:a:amazon:elastic_kubernetes_service:*:*:*:*:*:*:*:*",
+      "supplier": { "name": "Amazon Web Services" },
+      "properties": [
+        { "name": "asset.role",  "value": "routing_analytics_platform" },
+        { "name": "criticality", "value": "medium" },
+        { "name": "match_alias", "value": "eks" }
+      ]
+    },
+    {
+      "type": "application",
+      "bom-ref": "postgresql-nova",
+      "name": "PostgreSQL",
+      "version": "15",
+      "cpe": "cpe:2.3:a:postgresql:postgresql:15.*:*:*:*:*:*:*:*",
+      "supplier": { "name": "PostgreSQL Global Development Group" },
+      "properties": [
+        { "name": "asset.role",  "value": "shipment_tracking_database" },
+        { "name": "criticality", "value": "high" }
+      ]
+    },
+    {
+      "type": "application",
+      "bom-ref": "splunk-nova",
+      "name": "Splunk Enterprise",
+      "version": "9.2",
+      "supplier": { "name": "Splunk" },
+      "properties": [
+        { "name": "asset.role",  "value": "siem" },
+        { "name": "criticality", "value": "medium" },
+        { "name": "match_alias", "value": "splunk" }
+      ]
+    },
+    {
+      "type": "application",
+      "bom-ref": "jfrog-artifactory",
+      "name": "JFrog Artifactory",
+      "version": "7.77",
+      "supplier": { "name": "JFrog" },
+      "properties": [
+        { "name": "asset.role",  "value": "artifact_repository" },
+        { "name": "criticality", "value": "low" },
+        { "name": "match_alias", "value": "artifactory" }
+      ]
+    },
+    {
+      "type": "application",
+      "bom-ref": "nginx-nova",
+      "name": "Nginx",
+      "version": "1.24",
+      "cpe": "cpe:2.3:a:nginx:nginx:1.24.*:*:*:*:*:*:*:*",
+      "supplier": { "name": "F5 Networks" },
+      "properties": [
+        { "name": "asset.role",  "value": "api_gateway" },
+        { "name": "criticality", "value": "medium" }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "id": "NSLG-RISK-0001",
+      "source": { "name": "Internal Risk Assessment" },
+      "ratings": [{ "severity": "high" }],
+      "description": "SAP S/4HANA ERP exploitation enabling freight operations disruption and invoice fraud. CVE-2025-31324 (SAP NetWeaver unauthenticated RCE via file upload) allows complete ERP takeover, enabling manipulation of shipment manifests, customs declarations, and freight invoices. State-sponsored actors actively exploit SAP to compromise logistics and critical supply chain operators.",
+      "affects": [{ "ref": "sap-s4hana" }],
+      "known_cves": [
+        "CVE-2025-31324", "CVE-2024-22127",
+        "CVE-2023-23857", "CVE-2020-6207"
+      ]
+    },
+    {
+      "id": "NSLG-RISK-0002",
+      "source": { "name": "Internal Risk Assessment" },
+      "ratings": [{ "severity": "high" }],
+      "description": "Palo Alto PAN-OS command injection and authentication bypass vulnerabilities. CVE-2024-3400 enables unauthenticated RCE via the GlobalConnect VPN gateway, providing initial access to distribution centre networks and OT-adjacent warehouse systems.",
+      "affects": [{ "ref": "paloalto-ngfw-nova" }],
+      "known_cves": [
+        "CVE-2024-3400", "CVE-2025-0108",
+        "CVE-2024-9474", "CVE-2024-2550"
+      ]
+    },
+    {
+      "id": "NSLG-RISK-0003",
+      "source": { "name": "Internal Risk Assessment" },
+      "ratings": [{ "severity": "high" }],
+      "description": "Android Enterprise warehouse handheld compromise via mobile malware and MDM bypass. Attackers targeting logistics operators deploy mobile remote access trojans to barcode scanners to manipulate inventory reconciliation and shipment tracking data, enabling cargo diversion and theft.",
+      "affects": [{ "ref": "android-enterprise-handhelds" }],
+      "known_cves": [
+        "CVE-2024-32896", "CVE-2024-0039",
+        "CVE-2023-35674", "CVE-2024-31317"
+      ]
+    },
+    {
+      "id": "NSLG-RISK-0004",
+      "source": { "name": "Internal Risk Assessment" },
+      "ratings": [{ "severity": "high" }],
+      "description": "VMware ESXi ransomware targeting virtualised distribution centre and routing analytics workloads. Ransomware groups leverage ESXi vulnerabilities to simultaneously encrypt all guest VMs, halting freight dispatch and route optimisation platforms.",
+      "affects": [{ "ref": "vmware-esxi-nova" }],
+      "known_cves": [
+        "CVE-2021-21974", "CVE-2021-22005",
+        "CVE-2024-22252", "CVE-2024-22254"
+      ]
+    },
+    {
+      "id": "NSLG-RISK-0005",
+      "source": { "name": "Internal Risk Assessment" },
+      "ratings": [{ "severity": "medium" }],
+      "description": "JFrog Artifactory supply chain compromise. Malicious packages injected into internal artifact repositories can propagate backdoors across containerised logistics microservices deployed to EKS. Dependency confusion attacks particularly relevant given multi-tenant CI/CD.",
+      "affects": [{ "ref": "jfrog-artifactory" }, { "ref": "aws-eks-nova" }],
+      "known_cves": [
+        "CVE-2022-4244", "CVE-2023-3676"
+      ]
+    },
+    {
+      "id": "NSLG-RISK-0006",
+      "source": { "name": "Internal Risk Assessment" },
+      "ratings": [{ "severity": "high" }],
+      "description": "Ubuntu core logistics service exploitation. Unpatched kernel and OpenSSH vulnerabilities on systems running transport management and customs data exchange platforms enable privilege escalation and lateral movement across distribution centre networks.",
+      "affects": [{ "ref": "ubuntu-core-services" }],
+      "known_cves": [
+        "CVE-2024-6387", "CVE-2024-1086",
+        "CVE-2023-38408", "CVE-2023-48795"
+      ]
+    }
+  ]
+}

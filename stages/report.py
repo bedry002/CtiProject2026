@@ -11,6 +11,28 @@ from pipeline.event import CurationEvent
 
 logger = logging.getLogger(__name__)
 
+_IOC_SAMPLE_TYPES = frozenset({
+    "ip-src", "ip-dst", "domain", "hostname", "url",
+    "md5", "sha256", "sha1", "vulnerability",
+})
+_HASH_TYPES = frozenset({"md5", "sha256", "sha1"})
+
+
+def _attr_ioc_sample(attributes: list, n: int = 6) -> list[tuple[str, str]]:
+    seen: set[str] = set()
+    out: list[tuple[str, str]] = []
+    for attr in attributes:
+        if len(out) >= n:
+            break
+        t = attr.get("type", "")
+        v = str(attr.get("value", "")).strip()
+        if t in _IOC_SAMPLE_TYPES and v and v not in seen:
+            seen.add(v)
+            display = (v[:16] + "…") if t in _HASH_TYPES and len(v) > 16 else v
+            out.append((t, display))
+    return out
+
+
 _CONFIDENCE_BAND = [
     (0.50, "high",   "#1a7a3e", "#d4edda"),
     (0.25, "medium", "#856404", "#fff3cd"),
@@ -34,27 +56,23 @@ def _bar(confidence: float, fg: str, width: int = 200) -> str:
     )
 
 
-def _entity_pills(entities: dict) -> str:
-    if not entities:
-        return "<em style='color:#6c757d'>none</em>"
-    _COLOURS = {
-        "cves": "#f8d7da", "ttps": "#fff3cd", "iocs": "#cfe2ff",
-        "threat_actors": "#e2d9f3", "sectors": "#d1e7dd",
-        "software": "#fde8d8", "geographies": "#d1e7dd", "malware": "#f8d7da",
-    }
-    pills: list[str] = []
-    for label, values in entities.items():
-        if not isinstance(values, list):
-            continue
-        bg = _COLOURS.get(label, "#e9ecef")
-        for item in values:
-            text = item["text"] if isinstance(item, dict) else str(item)
-            pills.append(
-                f'<span style="background:{bg};padding:1px 6px;border-radius:10px;'
-                f'font-size:0.78em;margin:1px;display:inline-block">'
-                f'<b>{label}</b> {text}</span>'
-            )
-    return " ".join(pills) or "<em style='color:#6c757d'>none</em>"
+def _threat_context_pills(entities: dict) -> str:
+    parts: list[str] = []
+    for item in entities.get("threat_actors", []):
+        text = item["text"] if isinstance(item, dict) else str(item)
+        parts.append(
+            f'<span style="background:#e2d9f3;padding:1px 6px;border-radius:10px;'
+            f'font-size:0.78em;margin:1px;display:inline-block">'
+            f'<b>actor</b> {text}</span>'
+        )
+    for item in entities.get("cves", []):
+        text = item["text"] if isinstance(item, dict) else str(item)
+        parts.append(
+            f'<span style="background:#f8d7da;padding:1px 6px;border-radius:10px;'
+            f'font-size:0.78em;margin:1px;display:inline-block">'
+            f'<b>cve</b> {text}</span>'
+        )
+    return " ".join(parts) or "<em style='color:#6c757d'>none</em>"
 
 
 def _render(events: list[CurationEvent], all_count: int, threshold: float) -> str:
@@ -80,17 +98,28 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
 
         ioc         = e.ioc_summary
         total_iocs  = sum(ioc.values())
+        sample      = _attr_ioc_sample(e.raw.get("Attribute", []))
+        ioc_pills   = " ".join(
+            f'<code style="font-size:0.75em;background:#e9ecef;padding:1px 4px;border-radius:3px">{t}:{v}</code>'
+            for t, v in sample
+        )
         ioc_line    = (
             f'{total_iocs} IOCs &nbsp;<small style="color:#6c757d">'
             f'vuln:{ioc.get("vulnerability",0)} '
             f'net:{sum(ioc.get(t,0) for t in ("hostname","domain","ip-src","ip-dst","url"))} '
             f'file:{sum(ioc.get(t,0) for t in ("md5","sha256","sha1","filename"))}</small>'
+            + (f'<br><span style="font-size:0.78em">{ioc_pills}</span>' if ioc_pills else "")
         ) if total_iocs else "<em style='color:#6c757d'>none</em>"
 
-        sbom_html = (
-            ", ".join(f'<code style="font-size:0.78em">{r}</code>' for r in e.matched_sbom_components)
-            or "<em style='color:#6c757d'>none</em>"
-        )
+        _sbom_pills = [
+            f'<code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">{r}</code>'
+            for r in e.matched_sbom_components
+        ]
+        _prof_pills = [
+            f'<code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">{t}</code>'
+            for t in e.matched_profile_terms
+        ]
+        tech_stack_html = " ".join(_sbom_pills + _prof_pills) or "<em style='color:#6c757d'>none</em>"
 
         summary_row = ""
         if e.analyst_summary:
@@ -100,7 +129,7 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
             )
             summary_row = (
                 f'<tr style="background:{bg}">'
-                f'<td colspan="9" style="border-left:3px solid #d4a017;padding:5px 14px 8px">'
+                f'<td colspan="8" style="border-left:3px solid #d4a017;padding:5px 14px 8px">'
                 f'<b style="color:#856404;font-size:0.82em">&#x1F9E0; Analyst Summary</b>'
                 f'<p style="margin:3px 0;font-size:0.88em">{e.analyst_summary}</p>'
                 f'{flags_html}</td></tr>'
@@ -118,9 +147,8 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
             <small style="color:#6c757d;font-size:0.75em">{breakdown_html}</small>
           </td>
           <td style="font-size:0.82em">{ioc_line}</td>
-          <td style="font-size:0.82em">{sbom_html}</td>
-          <td style="font-size:0.82em">{', '.join(e.matched_profile_terms)}</td>
-          <td style="font-size:0.82em">{_entity_pills(e.entities)}</td>
+          <td style="font-size:0.82em">{tech_stack_html}</td>
+          <td style="font-size:0.82em">{_threat_context_pills(e.entities)}</td>
         </tr>{summary_row}""")
 
     return f"""<!DOCTYPE html>
@@ -159,7 +187,7 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
   <tr>
     <th>Band</th><th>Event ID</th><th>Date</th><th>Info</th>
     <th>Confidence<br><small style="font-weight:normal">Asset=SBOM+Kw Tech=Stack Sec=Sector Geo=Geo</small></th>
-    <th>IOCs</th><th>SBOM Hits</th><th>Matched Terms</th><th>NER Entities</th>
+    <th>IOCs</th><th>Tech Stack Hits<br><small style="font-weight:normal"><span style="background:#cfe2ff;padding:0 3px;border-radius:3px">blue</span>=SBOM component &nbsp;<span style="background:#e9ecef;padding:0 3px;border-radius:3px">grey</span>=profile term</small></th><th>Threat Context</th>
   </tr>
 </thead>
 <tbody>

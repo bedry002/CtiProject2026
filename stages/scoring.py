@@ -20,7 +20,7 @@ class BusinessProfile:
     sectors: list[str]
     technologies: list[str]
     geographies: list[str]
-    keywords: list[str]
+    keywords: list[str] = field(default_factory=list)
     specific_keywords: list[str] = field(default_factory=list)
 
 

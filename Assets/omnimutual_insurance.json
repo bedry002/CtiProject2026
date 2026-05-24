@@ -1,0 +1,60 @@
+{
+  "profile_id": "uuid-v4-omnimutual-insurance-2026-003",
+  "profile_version": "2.0",
+  "created": "2026-05-18T00:00:00Z",
+  "modified": "2026-05-24T00:00:00Z",
+  "organisation": {
+    "name": "OmniMutual Insurance Group",
+    "naics_code": "5241",
+    "jurisdiction": ["US", "UK", "AU"],
+    "headquarters": "New York, New York, United States"
+  },
+  "sectors": [
+    "insurance", "financial services", "insurance carriers",
+    "underwriting", "claims processing", "actuarial",
+    "broker services", "reinsurance", "pii"
+  ],
+  "technologies": [
+    "windows 11", "windows server 2022", "rhel",
+    "nutanix ahv", "nutanix",
+    "microsoft entra id", "active directory", "cyberark",
+    "palo alto", "f5", "globalprotect", "zscaler", "darktrace",
+    "azure", "ibm cloud",
+    "aks", "openshift",
+    "iis", "nginx",
+    "microsoft sql server", "db2", "postgresql",
+    "guidewire", "workday",
+    "microsoft 365", "exchange online",
+    "docker", "kubernetes",
+    "azure devops", "jenkins", "nexus repository",
+    "microsoft sentinel", "qradar", "cortex xsoar", "servicenow",
+    "tenable"
+  ],
+  "geographies": [
+    "new york", "united states", "us",
+    "united kingdom", "uk", "london",
+    "australia", "au", "sydney"
+  ],
+  "threat_actors": [
+    "scattered spider", "fin7", "ta505"
+  ],
+  "keywords": [
+    "business email compromise", "bec",
+    "wire fraud", "fraudulent transfer",
+    "insurance fraud", "claims manipulation",
+    "policy system attack", "actuarial data theft",
+    "customer pii", "identity theft",
+    "vishing", "social engineering",
+    "insider threat", "privileged access abuse",
+    "financial data exfiltration",
+    "mainframe attack"
+  ],
+  "cpe_list": [
+    "cpe:2.3:o:microsoft:windows_11:*:*:*:*:*:*:*:*",
+    "cpe:2.3:o:microsoft:windows_server_2022:*:*:*:*:*:*:*:*",
+    "cpe:2.3:o:redhat:enterprise_linux:9:*:*:*:*:*:*:*",
+    "cpe:2.3:a:microsoft:sql_server:*:*:*:*:*:*:*:*",
+    "cpe:2.3:a:nutanix:acropolis_hypervisor:*:*:*:*:*:*:*:*",
+    "cpe:2.3:a:f5:big-ip:*:*:*:*:*:*:*:*"
+  ]
+}

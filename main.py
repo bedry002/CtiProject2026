@@ -22,6 +22,7 @@ from config import (
     PIPELINE_CONTINUE_ON_STAGE_ERROR,
     POLL_INTERVAL_SECONDS, POLL_STATE_PATH, POLL_RUN_ONCE,
     POLL_LOOKBACK_HOURS, POLL_RESET_STATE, TAGGER_DRY_RUN, LLM_SKIP,
+    ATTACK_LOOKUP, ORG_ATTACK_PLATFORMS,
 )
 from pipeline.runner import Pipeline
 from stages.ingest import MISPIngestStage
@@ -64,7 +65,12 @@ def build_pipeline(misp_client: PyMISP) -> Pipeline:
         logging.info("LLM_SKIP=true — LLM enrichment stage disabled")
     stages = [
         NERStage(),
-        ScoringStage(BUSINESS_PROFILE, SBOM_PROFILE, threshold=CONFIDENCE_THRESHOLD),
+        ScoringStage(
+            BUSINESS_PROFILE, SBOM_PROFILE,
+            threshold=CONFIDENCE_THRESHOLD,
+            attack_lookup=ATTACK_LOOKUP,
+            org_attack_platforms=ORG_ATTACK_PLATFORMS,
+        ),
         *([] if LLM_SKIP else [LLMEnricherStage(profile_context=_LLM_PROFILE_CTX, min_confidence=CONFIDENCE_THRESHOLD)]),
         MISPTaggerStage(misp_client, dry_run=TAGGER_DRY_RUN),
         ReportStage(REPORT_PATH, threshold=CONFIDENCE_THRESHOLD),

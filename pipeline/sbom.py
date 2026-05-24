@@ -103,14 +103,10 @@ class SBOMRisk:
 class SBOMProfile:
     components: list[SBOMComponent] = field(default_factory=list)
     risks: list[SBOMRisk] = field(default_factory=list)
-    _total_weight: float = field(default=0.0, init=False, repr=False)
-
-    def __post_init__(self) -> None:
-        self._total_weight = sum(c.weight for c in self.components)
 
     @property
     def total_weight(self) -> float:
-        return self._total_weight
+        return sum(c.weight for c in self.components)
 
     def high_criticality(self) -> list[SBOMComponent]:
         return [c for c in self.components if c.criticality == "high"]
@@ -147,6 +143,82 @@ class SBOMProfile:
                     phrases.append(bigram)
 
         return phrases
+
+
+def _cpe_queryable(cpe: str) -> bool:
+    """True if the CPE has at least vendor and product specified (not wildcards)."""
+    parts = cpe.split(":")
+    return (len(parts) >= 5
+            and parts[3] not in ("", "*")
+            and parts[4] not in ("", "*"))
+
+
+def inject_profile_cpes(profile: SBOMProfile, cpe_list: list[str]) -> None:
+    """Add synthetic SBOM components for org-profile CPEs not already in the SBOM.
+
+    Profile CPEs cover non-software technology assets (firewalls, middleware, etc.)
+    that tools like Syft do not discover. Injecting them lets NVD enrichment and
+    CVE cross-reference scoring cover the full technology estate.
+    """
+    existing_cpes = {c.cpe for c in profile.components if c.cpe}
+    for cpe in cpe_list:
+        if cpe in existing_cpes:
+            continue
+        parts   = cpe.split(":")
+        vendor  = parts[3] if len(parts) > 3 and parts[3] != "*" else "unknown"
+        product = parts[4] if len(parts) > 4 and parts[4] != "*" else "unknown"
+        version = parts[5] if len(parts) > 5 and parts[5] != "*" else ""
+        name    = f"{vendor} {product}".replace("_", " ").title()
+        bom_ref = f"profile-{product.replace('_', '-')}"
+        profile.components.append(SBOMComponent(
+            bom_ref=bom_ref,
+            name=name,
+            version=version,
+            supplier=vendor,
+            cpe=cpe,
+            criticality="medium",
+            weight=_CRITICALITY_WEIGHT.get("medium", 0.6),
+            aliases=[],
+        ))
+
+
+def enrich_with_nvd(
+    profile: SBOMProfile,
+    cache_path: pathlib.Path,
+    api_key: str | None = None,
+) -> None:
+    """Append NVD-sourced CVEs to risk entries for every queryable component CPE.
+
+    A CPE is queryable when vendor and product are both specified. Trailing
+    version/edition wildcards are fine — NVD returns all CVEs for that product.
+    """
+    from pipeline.nvd import enrich_cpe_list
+
+    cpe_list = [c.cpe for c in profile.components if c.cpe and _cpe_queryable(c.cpe)]
+    if not cpe_list:
+        return
+
+    nvd_data = enrich_cpe_list(cpe_list, cache_path, api_key)
+
+    for component in profile.components:
+        if not component.cpe or component.cpe not in nvd_data:
+            continue
+        new_cves = [c.upper() for c in nvd_data[component.cpe]]
+        if not new_cves:
+            continue
+        existing = next(
+            (r for r in profile.risks if component.bom_ref in r.affected_refs), None
+        )
+        if existing:
+            existing.known_cves = list(dict.fromkeys(existing.known_cves + new_cves))
+        else:
+            profile.risks.append(SBOMRisk(
+                risk_id=f"NVD-{component.bom_ref}",
+                description=f"NVD CVEs for {component.name} ({component.cpe})",
+                affected_refs=[component.bom_ref],
+                severity="unknown",
+                known_cves=new_cves,
+            ))
 
 
 def load_sbom(path: pathlib.Path) -> SBOMProfile:

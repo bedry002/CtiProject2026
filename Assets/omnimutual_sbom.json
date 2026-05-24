@@ -5,15 +5,27 @@
   "version": 1,
   "metadata": {
     "timestamp": "2026-05-18T00:00:00Z",
-    "tools": [{ "vendor": "Anchore", "name": "Syft", "version": "1.20.0" }],
-    "authors": [{ "name": "OmniMutual Insurance Group – Security Operations" }],
+    "tools": [
+      {
+        "vendor": "Anchore",
+        "name": "Syft",
+        "version": "1.20.0"
+      }
+    ],
+    "authors": [
+      {
+        "name": "OmniMutual Insurance Group – Security Operations"
+      }
+    ],
     "component": {
       "type": "application",
       "bom-ref": "omnimutual-environment",
       "name": "OmniMutual Insurance Group – Production Environment",
       "version": "2026.05",
       "description": "Nutanix AHV virtualised insurance platform spanning Guidewire claims and underwriting, Microsoft SQL Server and DB2 databases, Palo Alto and F5 network stack, AKS and OpenShift containers, CyberArk PAM, and QRadar SIEM.",
-      "supplier": { "name": "OmniMutual Insurance Group" }
+      "supplier": {
+        "name": "OmniMutual Insurance Group"
+      }
     }
   },
   "components": [
@@ -23,11 +35,22 @@
       "name": "Nutanix AHV",
       "version": "20230302",
       "cpe": "cpe:2.3:a:nutanix:acropolis_hypervisor:*:*:*:*:*:*:*:*",
-      "supplier": { "name": "Nutanix" },
+      "supplier": {
+        "name": "Nutanix"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "hypervisor" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "nutanix" }
+        {
+          "name": "asset.role",
+          "value": "hypervisor"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "nutanix"
+        }
       ]
     },
     {
@@ -36,12 +59,26 @@
       "name": "F5 BIG-IP",
       "version": "17.1",
       "cpe": "cpe:2.3:a:f5:big-ip:17.*:*:*:*:*:*:*:*",
-      "supplier": { "name": "F5" },
+      "supplier": {
+        "name": "F5"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "application_delivery_controller" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "f5" },
-        { "name": "match_alias", "value": "big-ip" }
+        {
+          "name": "asset.role",
+          "value": "application_delivery_controller"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "f5"
+        },
+        {
+          "name": "match_alias",
+          "value": "big-ip"
+        }
       ]
     },
     {
@@ -50,12 +87,26 @@
       "name": "Microsoft SQL Server",
       "version": "2022",
       "cpe": "cpe:2.3:a:microsoft:sql_server:2022:*:*:*:*:*:*:*",
-      "supplier": { "name": "Microsoft" },
+      "supplier": {
+        "name": "Microsoft"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "claims_database" },
-        { "name": "data.class",  "value": "pii_financial_data" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "sql server" }
+        {
+          "name": "asset.role",
+          "value": "claims_database"
+        },
+        {
+          "name": "data.class",
+          "value": "pii_financial_data"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "sql server"
+        }
       ]
     },
     {
@@ -64,11 +115,22 @@
       "name": "IBM Db2",
       "version": "11.5",
       "cpe": "cpe:2.3:a:ibm:db2:11.5:*:*:*:*:*:*:*",
-      "supplier": { "name": "IBM" },
+      "supplier": {
+        "name": "IBM"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "actuarial_data_store" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "db2" }
+        {
+          "name": "asset.role",
+          "value": "actuarial_data_store"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "db2"
+        }
       ]
     },
     {
@@ -76,11 +138,22 @@
       "bom-ref": "guidewire-platform",
       "name": "Guidewire ClaimCenter",
       "version": "11.0",
-      "supplier": { "name": "Guidewire" },
+      "supplier": {
+        "name": "Guidewire"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "claims_management" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "guidewire" }
+        {
+          "name": "asset.role",
+          "value": "claims_management"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "guidewire"
+        }
       ]
     },
     {
@@ -88,11 +161,22 @@
       "bom-ref": "cyberark-pam",
       "name": "CyberArk Privileged Access Manager",
       "version": "14.0",
-      "supplier": { "name": "CyberArk" },
+      "supplier": {
+        "name": "CyberArk"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "pam" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "cyberark" }
+        {
+          "name": "asset.role",
+          "value": "pam"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "cyberark"
+        }
       ]
     },
     {
@@ -101,11 +185,22 @@
       "name": "Palo Alto PAN-OS",
       "version": "11.1",
       "cpe": "cpe:2.3:o:paloaltonetworks:pan-os:11.*:*:*:*:*:*:*:*",
-      "supplier": { "name": "Palo Alto Networks" },
+      "supplier": {
+        "name": "Palo Alto Networks"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "perimeter_firewall" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "palo alto" }
+        {
+          "name": "asset.role",
+          "value": "perimeter_firewall"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "palo alto"
+        }
       ]
     },
     {
@@ -114,11 +209,22 @@
       "name": "Red Hat OpenShift",
       "version": "4.15",
       "cpe": "cpe:2.3:a:redhat:openshift:4.*:*:*:*:*:*:*:*",
-      "supplier": { "name": "Red Hat" },
+      "supplier": {
+        "name": "Red Hat"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "container_orchestration" },
-        { "name": "criticality", "value": "medium" },
-        { "name": "match_alias", "value": "openshift" }
+        {
+          "name": "asset.role",
+          "value": "container_orchestration"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        },
+        {
+          "name": "match_alias",
+          "value": "openshift"
+        }
       ]
     },
     {
@@ -127,10 +233,18 @@
       "name": "Windows Server 2022",
       "version": "21H2",
       "cpe": "cpe:2.3:o:microsoft:windows_server_2022:*:*:*:*:*:*:*:*",
-      "supplier": { "name": "Microsoft" },
+      "supplier": {
+        "name": "Microsoft"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "claims_server" },
-        { "name": "criticality", "value": "high" }
+        {
+          "name": "asset.role",
+          "value": "claims_server"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        }
       ]
     },
     {
@@ -139,11 +253,22 @@
       "name": "Red Hat Enterprise Linux",
       "version": "9",
       "cpe": "cpe:2.3:o:redhat:enterprise_linux:9:*:*:*:*:*:*:*",
-      "supplier": { "name": "Red Hat" },
+      "supplier": {
+        "name": "Red Hat"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "analytics_compute" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "rhel" }
+        {
+          "name": "asset.role",
+          "value": "analytics_compute"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "rhel"
+        }
       ]
     },
     {
@@ -151,11 +276,22 @@
       "bom-ref": "qradar-siem",
       "name": "IBM QRadar SIEM",
       "version": "7.5",
-      "supplier": { "name": "IBM" },
+      "supplier": {
+        "name": "IBM"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "siem" },
-        { "name": "criticality", "value": "medium" },
-        { "name": "match_alias", "value": "qradar" }
+        {
+          "name": "asset.role",
+          "value": "siem"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        },
+        {
+          "name": "match_alias",
+          "value": "qradar"
+        }
       ]
     },
     {
@@ -163,11 +299,22 @@
       "bom-ref": "cortex-xsoar",
       "name": "Cortex XSOAR",
       "version": "8.0",
-      "supplier": { "name": "Palo Alto Networks" },
+      "supplier": {
+        "name": "Palo Alto Networks"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "soar" },
-        { "name": "criticality", "value": "low" },
-        { "name": "match_alias", "value": "xsoar" }
+        {
+          "name": "asset.role",
+          "value": "soar"
+        },
+        {
+          "name": "criticality",
+          "value": "low"
+        },
+        {
+          "name": "match_alias",
+          "value": "xsoar"
+        }
       ]
     },
     {
@@ -176,10 +323,18 @@
       "name": "PostgreSQL",
       "version": "15",
       "cpe": "cpe:2.3:a:postgresql:postgresql:15.*:*:*:*:*:*:*:*",
-      "supplier": { "name": "PostgreSQL Global Development Group" },
+      "supplier": {
+        "name": "PostgreSQL Global Development Group"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "policy_database" },
-        { "name": "criticality", "value": "high" }
+        {
+          "name": "asset.role",
+          "value": "policy_database"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        }
       ]
     },
     {
@@ -187,77 +342,18 @@
       "bom-ref": "microsoft-365-omni",
       "name": "Microsoft 365",
       "version": "current",
-      "supplier": { "name": "Microsoft" },
+      "supplier": {
+        "name": "Microsoft"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "productivity_suite" },
-        { "name": "criticality", "value": "medium" }
-      ]
-    }
-  ],
-  "vulnerabilities": [
-    {
-      "id": "OMNI-RISK-0001",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "high" }],
-      "description": "F5 BIG-IP critical authentication bypass and SQL injection vulnerabilities. CVE-2023-46747 allows unauthenticated RCE via the iControl REST interface, while CVE-2023-46748 enables SQL injection for credential theft. BIG-IP fronts all customer-facing insurance portals handling policy issuance and claims submission.",
-      "affects": [{ "ref": "f5-bigip" }],
-      "known_cves": [
-        "CVE-2023-46747", "CVE-2023-46748",
-        "CVE-2024-21793", "CVE-2024-21762",
-        "CVE-2022-1388"
-      ]
-    },
-    {
-      "id": "OMNI-RISK-0002",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "high" }],
-      "description": "Nutanix AHV hypervisor vulnerabilities exposing claims processing and actuarial workload VMs. Prism Central authentication flaws and AHV kernel privilege escalation can allow attackers to escape guest isolation and access all VM workloads on the cluster.",
-      "affects": [{ "ref": "nutanix-ahv" }],
-      "known_cves": [
-        "CVE-2024-9210", "CVE-2023-32465"
-      ]
-    },
-    {
-      "id": "OMNI-RISK-0003",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "high" }],
-      "description": "Microsoft SQL Server exploitation targeting claims and policy databases containing PII and financial records. Privilege escalation and remote code execution via unpatched SQL Server vulnerabilities enable bulk exfiltration of customer data and actuary models under regulatory scope.",
-      "affects": [{ "ref": "mssql-claims" }, { "ref": "ibm-db2" }],
-      "known_cves": [
-        "CVE-2024-37342", "CVE-2023-36728",
-        "CVE-2024-21308", "CVE-2023-21528"
-      ]
-    },
-    {
-      "id": "OMNI-RISK-0004",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "high" }],
-      "description": "CyberArk PAM exploitation enabling privileged credential theft across insurance infrastructure. Attackers targeting CyberArk Vault can extract stored credentials for all privileged accounts, achieving domain-wide compromise and enabling fraudulent wire transfers and claims manipulation.",
-      "affects": [{ "ref": "cyberark-pam" }],
-      "known_cves": [
-        "CVE-2022-22966", "CVE-2021-31789"
-      ]
-    },
-    {
-      "id": "OMNI-RISK-0005",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "high" }],
-      "description": "Business email compromise targeting Microsoft 365 and Exchange Online for wire fraud and fraudulent claims payments. FIN7 and Scattered Spider conduct BEC campaigns against insurance carriers, impersonating claimants or brokers to redirect payment transfers.",
-      "affects": [{ "ref": "microsoft-365-omni" }],
-      "known_cves": [
-        "CVE-2023-23397", "CVE-2024-21413",
-        "CVE-2024-30103", "CVE-2024-38021"
-      ]
-    },
-    {
-      "id": "OMNI-RISK-0006",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "medium" }],
-      "description": "OpenShift container escape and privilege escalation. Vulnerabilities in the OpenShift API server and container runtime allow breakout from tenant namespaces, exposing co-hosted insurance microservices and their database credentials.",
-      "affects": [{ "ref": "openshift-containers" }],
-      "known_cves": [
-        "CVE-2024-3177", "CVE-2023-5408",
-        "CVE-2023-6476"
+        {
+          "name": "asset.role",
+          "value": "productivity_suite"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        }
       ]
     }
   ]

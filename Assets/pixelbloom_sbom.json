@@ -5,15 +5,27 @@
   "version": 1,
   "metadata": {
     "timestamp": "2026-05-18T00:00:00Z",
-    "tools": [{ "vendor": "Anchore", "name": "Syft", "version": "1.20.0" }],
-    "authors": [{ "name": "PixelBloom Creative Agency – IT" }],
+    "tools": [
+      {
+        "vendor": "Anchore",
+        "name": "Syft",
+        "version": "1.20.0"
+      }
+    ],
+    "authors": [
+      {
+        "name": "PixelBloom Creative Agency – IT"
+      }
+    ],
     "component": {
       "type": "application",
       "bom-ref": "pixelbloom-environment",
       "name": "PixelBloom Creative Agency – Production Environment",
       "version": "2026.05",
       "description": "macOS-primary creative workstation fleet, Google Workspace collaboration and identity, GCP Cloud Run hosting, Ubiquiti UniFi network, Adobe Creative Cloud, Docker-based internal tooling, and GitHub Actions CI/CD.",
-      "supplier": { "name": "PixelBloom Creative Agency" }
+      "supplier": {
+        "name": "PixelBloom Creative Agency"
+      }
     }
   },
   "components": [
@@ -23,13 +35,30 @@
       "name": "macOS",
       "version": "14",
       "cpe": "cpe:2.3:o:apple:macos:14:*:*:*:*:*:*:*",
-      "supplier": { "name": "Apple" },
+      "supplier": {
+        "name": "Apple"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "creative_workstation" },
-        { "name": "asset.group", "value": "Creative Macs" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "macos" },
-        { "name": "match_alias", "value": "mac" }
+        {
+          "name": "asset.role",
+          "value": "creative_workstation"
+        },
+        {
+          "name": "asset.group",
+          "value": "Creative Macs"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "macos"
+        },
+        {
+          "name": "match_alias",
+          "value": "mac"
+        }
       ]
     },
     {
@@ -37,12 +66,26 @@
       "bom-ref": "google-workspace",
       "name": "Google Workspace",
       "version": "current",
-      "supplier": { "name": "Google" },
+      "supplier": {
+        "name": "Google"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "collaboration_identity" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "google workspace" },
-        { "name": "match_alias", "value": "gmail" }
+        {
+          "name": "asset.role",
+          "value": "collaboration_identity"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "google workspace"
+        },
+        {
+          "name": "match_alias",
+          "value": "gmail"
+        }
       ]
     },
     {
@@ -50,11 +93,22 @@
       "bom-ref": "adobe-creative-cloud",
       "name": "Adobe Creative Cloud",
       "version": "2024",
-      "supplier": { "name": "Adobe" },
+      "supplier": {
+        "name": "Adobe"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "creative_toolchain" },
-        { "name": "criticality", "value": "medium" },
-        { "name": "match_alias", "value": "adobe" }
+        {
+          "name": "asset.role",
+          "value": "creative_toolchain"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        },
+        {
+          "name": "match_alias",
+          "value": "adobe"
+        }
       ]
     },
     {
@@ -63,12 +117,26 @@
       "name": "Ubiquiti UniFi",
       "version": "8.1",
       "cpe": "cpe:2.3:a:ubiquiti:unifi_network_application:8.*:*:*:*:*:*:*:*",
-      "supplier": { "name": "Ubiquiti" },
+      "supplier": {
+        "name": "Ubiquiti"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "network_infrastructure" },
-        { "name": "criticality", "value": "medium" },
-        { "name": "match_alias", "value": "unifi" },
-        { "name": "match_alias", "value": "ubiquiti" }
+        {
+          "name": "asset.role",
+          "value": "network_infrastructure"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        },
+        {
+          "name": "match_alias",
+          "value": "unifi"
+        },
+        {
+          "name": "match_alias",
+          "value": "ubiquiti"
+        }
       ]
     },
     {
@@ -76,12 +144,26 @@
       "bom-ref": "gcp-cloud-run",
       "name": "Google Cloud Run",
       "version": "current",
-      "supplier": { "name": "Google" },
+      "supplier": {
+        "name": "Google"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "serverless_hosting" },
-        { "name": "criticality", "value": "medium" },
-        { "name": "match_alias", "value": "cloud run" },
-        { "name": "match_alias", "value": "gcp" }
+        {
+          "name": "asset.role",
+          "value": "serverless_hosting"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        },
+        {
+          "name": "match_alias",
+          "value": "cloud run"
+        },
+        {
+          "name": "match_alias",
+          "value": "gcp"
+        }
       ]
     },
     {
@@ -90,11 +172,22 @@
       "name": "Windows 11 Pro",
       "version": "23H2",
       "cpe": "cpe:2.3:o:microsoft:windows_11:*:*:*:*:pro:*:*:*",
-      "supplier": { "name": "Microsoft" },
+      "supplier": {
+        "name": "Microsoft"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "admin_workstation" },
-        { "name": "asset.group", "value": "Admin Laptops" },
-        { "name": "criticality", "value": "medium" }
+        {
+          "name": "asset.role",
+          "value": "admin_workstation"
+        },
+        {
+          "name": "asset.group",
+          "value": "Admin Laptops"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        }
       ]
     },
     {
@@ -103,11 +196,22 @@
       "name": "Ubuntu Linux",
       "version": "22.04 LTS",
       "cpe": "cpe:2.3:o:canonical:ubuntu_linux:22.04:*:*:*:lts:*:*:*",
-      "supplier": { "name": "Canonical" },
+      "supplier": {
+        "name": "Canonical"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "internal_application_host" },
-        { "name": "criticality", "value": "medium" },
-        { "name": "match_alias", "value": "ubuntu" }
+        {
+          "name": "asset.role",
+          "value": "internal_application_host"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        },
+        {
+          "name": "match_alias",
+          "value": "ubuntu"
+        }
       ]
     },
     {
@@ -116,10 +220,18 @@
       "name": "Nginx",
       "version": "1.24",
       "cpe": "cpe:2.3:a:nginx:nginx:1.24.*:*:*:*:*:*:*:*",
-      "supplier": { "name": "F5 Networks" },
+      "supplier": {
+        "name": "F5 Networks"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "web_server" },
-        { "name": "criticality", "value": "medium" }
+        {
+          "name": "asset.role",
+          "value": "web_server"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        }
       ]
     },
     {
@@ -128,10 +240,18 @@
       "name": "PostgreSQL",
       "version": "16",
       "cpe": "cpe:2.3:a:postgresql:postgresql:16.*:*:*:*:*:*:*:*",
-      "supplier": { "name": "PostgreSQL Global Development Group" },
+      "supplier": {
+        "name": "PostgreSQL Global Development Group"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "client_project_database" },
-        { "name": "criticality", "value": "medium" }
+        {
+          "name": "asset.role",
+          "value": "client_project_database"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        }
       ]
     },
     {
@@ -139,65 +259,22 @@
       "bom-ref": "wireguard-vpn",
       "name": "WireGuard",
       "version": "1.0",
-      "supplier": { "name": "Jason A. Donenfeld" },
+      "supplier": {
+        "name": "Jason A. Donenfeld"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "remote_access_vpn" },
-        { "name": "criticality", "value": "low" },
-        { "name": "match_alias", "value": "wireguard" }
-      ]
-    }
-  ],
-  "vulnerabilities": [
-    {
-      "id": "PB-RISK-0001",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "high" }],
-      "description": "macOS infostealer malware targeting creative agency workstations. Threat actors distribute Lumma Stealer, Atomic Stealer, and Poseidon variants via malicious advertising, pirated creative software, and phishing links. Stealers harvest browser credentials, crypto wallets, Adobe session tokens, and Google Workspace OAuth tokens from macOS keychain.",
-      "affects": [{ "ref": "macos-creative-fleet" }],
-      "known_cves": [
-        "CVE-2024-44131", "CVE-2024-27800",
-        "CVE-2023-28205", "CVE-2024-23296"
-      ]
-    },
-    {
-      "id": "PB-RISK-0002",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "high" }],
-      "description": "Google Workspace account takeover via phishing and OAuth token theft. Attackers use adversary-in-the-middle phishing kits to bypass 2FA and steal session cookies, gaining access to Gmail, Google Drive client deliverables, and shared campaign assets. Google Workspace credential theft is a primary vector for small-to-medium creative agencies.",
-      "affects": [{ "ref": "google-workspace" }],
-      "known_cves": [
-        "CVE-2024-4671", "CVE-2024-5274"
-      ]
-    },
-    {
-      "id": "PB-RISK-0003",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "medium" }],
-      "description": "Ubiquiti UniFi network application vulnerabilities allowing unauthenticated access to network management and client traffic interception. Exploitation enables attackers to pivot from the corporate WiFi into internal application servers hosting client project data.",
-      "affects": [{ "ref": "ubiquiti-unifi" }],
-      "known_cves": [
-        "CVE-2021-22909", "CVE-2023-35086"
-      ]
-    },
-    {
-      "id": "PB-RISK-0004",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "medium" }],
-      "description": "Adobe Creative Cloud credential theft and malicious plugin distribution. Attackers distribute trojanised Adobe plugins and crack tools through underground markets, targeting design professionals. Compromised Adobe accounts expose cloud-synced project files and client deliverables.",
-      "affects": [{ "ref": "adobe-creative-cloud" }],
-      "known_cves": [
-        "CVE-2024-20769", "CVE-2024-20791",
-        "CVE-2024-41866", "CVE-2024-34141"
-      ]
-    },
-    {
-      "id": "PB-RISK-0005",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "low" }],
-      "description": "GitHub Actions supply chain compromise via malicious workflow steps or poisoned third-party actions. Compromised actions can exfiltrate repository secrets or inject malicious code into Cloud Run deployments serving client campaign dashboards.",
-      "affects": [{ "ref": "gcp-cloud-run" }],
-      "known_cves": [
-        "CVE-2023-3676", "CVE-2023-3955"
+        {
+          "name": "asset.role",
+          "value": "remote_access_vpn"
+        },
+        {
+          "name": "criticality",
+          "value": "low"
+        },
+        {
+          "name": "match_alias",
+          "value": "wireguard"
+        }
       ]
     }
   ]

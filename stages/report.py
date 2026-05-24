@@ -58,6 +58,7 @@ def _bar(confidence: float, fg: str, width: int = 200) -> str:
 
 def _threat_context_pills(entities: dict) -> str:
     parts: list[str] = []
+
     for item in entities.get("threat_actors", []):
         text = item["text"] if isinstance(item, dict) else str(item)
         parts.append(
@@ -65,6 +66,28 @@ def _threat_context_pills(entities: dict) -> str:
             f'font-size:0.78em;margin:1px;display:inline-block">'
             f'<b>actor</b> {text}</span>'
         )
+
+    # TTPs enriched with ATT&CK metadata — org-relevant ones highlighted green
+    for ttp in entities.get("ttps", []):
+        if not isinstance(ttp, dict):
+            continue
+        tid      = ttp.get("text", "")
+        name     = ttp.get("name", "")
+        tactics  = ttp.get("tactics", [])
+        relevant = ttp.get("org_relevant", False)
+        label    = tid
+        if name:
+            label += f" {name}"
+        if tactics:
+            label += f" [{tactics[0].replace('-', ' ')}]"
+        bg = "#d4edda" if relevant else "#e9ecef"
+        parts.append(
+            f'<span style="background:{bg};padding:1px 6px;border-radius:10px;'
+            f'font-size:0.78em;margin:1px;display:inline-block" '
+            f'title="{"Targets org platforms" if relevant else "Platform not in org stack"}">'
+            f'<b>ttp</b> {label}</span>'
+        )
+
     for item in entities.get("cves", []):
         text = item["text"] if isinstance(item, dict) else str(item)
         parts.append(
@@ -72,6 +95,19 @@ def _threat_context_pills(entities: dict) -> str:
             f'font-size:0.78em;margin:1px;display:inline-block">'
             f'<b>cve</b> {text}</span>'
         )
+
+    # Geography — not scored, shown for analyst awareness
+    seen_geo: set[str] = set()
+    for item in entities.get("geographies", []):
+        text = (item["text"] if isinstance(item, dict) else str(item)).strip()
+        if text and text.lower() not in seen_geo:
+            seen_geo.add(text.lower())
+            parts.append(
+                f'<span style="background:#d3e3fd;padding:1px 6px;border-radius:10px;'
+                f'font-size:0.78em;margin:1px;display:inline-block">'
+                f'<b>geo</b> {text}</span>'
+            )
+
     return " ".join(parts) or "<em style='color:#6c757d'>none</em>"
 
 
@@ -87,14 +123,15 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
         conf           = e.confidence or 0
         label, fg, bg  = _band(conf)
         bd             = e.score_breakdown
-        cve_badge      = (' <span title="CVE→component match" style="color:#0d6efd">&#x2731;</span>'
-                          if bd.get("sbom_cve", 0) > 0 else "")
-        breakdown_html = (
-            f'<span title="SBOM component + keyword match (sbom_cve={bd.get("sbom_cve",0):.2f})">Asset:{bd.get("asset",0):.2f}{cve_badge}</span> '
-            f'<span title="Technology stack">Tech:{bd.get("tech",0):.2f}</span> '
-            f'<span title="Sector alignment">Sec:{bd.get("sector",0):.2f}</span> '
-            f'<span title="Geography">Geo:{bd.get("geography",0):.2f}</span>'
-        ) if bd else ""
+        cve_badge = (' <span title="CVE matched SBOM component" style="color:#0d6efd">&#x2731;</span>'
+                     if bd.get("sbom_cve", 0) > 0 else "")
+        if bd and conf > 0:
+            sp = round(bd.get("stack_contrib",  0) / conf * 100)
+            ep = round(bd.get("sector_contrib", 0) / conf * 100)
+            tp = round(bd.get("ttp_contrib",    0) / conf * 100)
+            breakdown_html = f'Stack&nbsp;{sp}%{cve_badge} &nbsp; Sec&nbsp;{ep}% &nbsp; TTP&nbsp;{tp}%'
+        else:
+            breakdown_html = ""
 
         ioc         = e.ioc_summary
         total_iocs  = sum(ioc.values())
@@ -111,15 +148,15 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
             + (f'<br><span style="font-size:0.78em">{ioc_pills}</span>' if ioc_pills else "")
         ) if total_iocs else "<em style='color:#6c757d'>none</em>"
 
-        _sbom_pills = [
-            f'<code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">{r}</code>'
-            for r in e.matched_sbom_components
-        ]
-        _prof_pills = [
-            f'<code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">{t}</code>'
-            for t in e.matched_profile_terms
-        ]
-        tech_stack_html = " ".join(_sbom_pills + _prof_pills) or "<em style='color:#6c757d'>none</em>"
+        nvd_cves = e.entities.get("nvd_cves", [])
+        if nvd_cves:
+            nvd_html = " ".join(
+                f'<code style="font-size:0.75em;background:#f8d7da;padding:1px 4px;'
+                f'border-radius:3px;white-space:nowrap">{c}</code>'
+                for c in nvd_cves
+            )
+        else:
+            nvd_html = "<em style='color:#6c757d'>none — enable NVD_ENRICH=true</em>" if not e.matched_sbom_components else "<em style='color:#6c757d'>no CVEs</em>"
 
         summary_row = ""
         if e.analyst_summary:
@@ -147,7 +184,7 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
             <small style="color:#6c757d;font-size:0.75em">{breakdown_html}</small>
           </td>
           <td style="font-size:0.82em">{ioc_line}</td>
-          <td style="font-size:0.82em">{tech_stack_html}</td>
+          <td style="font-size:0.82em">{nvd_html}</td>
           <td style="font-size:0.82em">{_threat_context_pills(e.entities)}</td>
         </tr>{summary_row}""")
 
@@ -186,8 +223,8 @@ def _render(events: list[CurationEvent], all_count: int, threshold: float) -> st
 <thead>
   <tr>
     <th>Band</th><th>Event ID</th><th>Date</th><th>Info</th>
-    <th>Confidence<br><small style="font-weight:normal">Asset=SBOM+Kw Tech=Stack Sec=Sector Geo=Geo</small></th>
-    <th>IOCs</th><th>Tech Stack Hits<br><small style="font-weight:normal"><span style="background:#cfe2ff;padding:0 3px;border-radius:3px">blue</span>=SBOM component &nbsp;<span style="background:#e9ecef;padding:0 3px;border-radius:3px">grey</span>=profile term</small></th><th>Threat Context</th>
+    <th>Confidence<br><small style="font-weight:normal">Stack · Sec · TTP as % of total</small></th>
+    <th>IOCs</th><th>NVD CVEs<br><small style="font-weight:normal">for matched SBOM components</small></th><th>Threat Context<br><small style="font-weight:normal">actors &nbsp;ttps &nbsp;cves &nbsp;geo</small></th>
   </tr>
 </thead>
 <tbody>

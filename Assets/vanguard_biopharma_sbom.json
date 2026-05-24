@@ -5,15 +5,27 @@
   "version": 1,
   "metadata": {
     "timestamp": "2026-05-18T00:00:00Z",
-    "tools": [{ "vendor": "Anchore", "name": "Syft", "version": "1.20.0" }],
-    "authors": [{ "name": "Vanguard BioPharma – Security Operations" }],
+    "tools": [
+      {
+        "vendor": "Anchore",
+        "name": "Syft",
+        "version": "1.20.0"
+      }
+    ],
+    "authors": [
+      {
+        "name": "Vanguard BioPharma – Security Operations"
+      }
+    ],
     "component": {
       "type": "application",
       "bom-ref": "vanguard-biopharma-environment",
       "name": "Vanguard BioPharma – Production Environment",
       "version": "2026.05",
       "description": "Mixed RHEL/Windows environment spanning research compute, clinical systems, VMware virtualisation, AWS-hosted bioinformatics platform, and Okta/AD identity stack.",
-      "supplier": { "name": "Vanguard BioPharma" }
+      "supplier": {
+        "name": "Vanguard BioPharma"
+      }
     }
   },
   "components": [
@@ -23,12 +35,26 @@
       "name": "Red Hat Enterprise Linux",
       "version": "9.3",
       "cpe": "cpe:2.3:o:redhat:enterprise_linux:9:*:*:*:*:*:*:*",
-      "supplier": { "name": "Red Hat" },
+      "supplier": {
+        "name": "Red Hat"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "research_compute" },
-        { "name": "asset.group", "value": "Research Workstations" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "rhel" }
+        {
+          "name": "asset.role",
+          "value": "research_compute"
+        },
+        {
+          "name": "asset.group",
+          "value": "Research Workstations"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "rhel"
+        }
       ]
     },
     {
@@ -37,11 +63,22 @@
       "name": "Windows Server 2022",
       "version": "21H2",
       "cpe": "cpe:2.3:o:microsoft:windows_server_2022:*:*:*:*:*:*:*:*",
-      "supplier": { "name": "Microsoft" },
+      "supplier": {
+        "name": "Microsoft"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "clinical_server" },
-        { "name": "asset.group", "value": "Clinical Systems" },
-        { "name": "criticality", "value": "high" }
+        {
+          "name": "asset.role",
+          "value": "clinical_server"
+        },
+        {
+          "name": "asset.group",
+          "value": "Clinical Systems"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        }
       ]
     },
     {
@@ -50,10 +87,18 @@
       "name": "VMware ESXi",
       "version": "8.0 U2",
       "cpe": "cpe:2.3:o:vmware:esxi:8.*:*:*:*:*:*:*:*",
-      "supplier": { "name": "VMware" },
+      "supplier": {
+        "name": "VMware"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "hypervisor" },
-        { "name": "criticality", "value": "high" }
+        {
+          "name": "asset.role",
+          "value": "hypervisor"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        }
       ]
     },
     {
@@ -62,11 +107,22 @@
       "name": "VMware vSphere",
       "version": "8.0 U3",
       "cpe": "cpe:2.3:a:vmware:vsphere:8.*:*:*:*:*:*:*:*",
-      "supplier": { "name": "VMware" },
+      "supplier": {
+        "name": "VMware"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "virtualisation_platform" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "vsphere" }
+        {
+          "name": "asset.role",
+          "value": "virtualisation_platform"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "vsphere"
+        }
       ]
     },
     {
@@ -74,11 +130,22 @@
       "bom-ref": "okta-identity",
       "name": "Okta Identity Cloud",
       "version": "2026.1",
-      "supplier": { "name": "Okta" },
+      "supplier": {
+        "name": "Okta"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "cloud_identity" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "okta" }
+        {
+          "name": "asset.role",
+          "value": "cloud_identity"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "okta"
+        }
       ]
     },
     {
@@ -86,11 +153,22 @@
       "bom-ref": "beyondtrust-pam",
       "name": "BeyondTrust Password Safe",
       "version": "25.1",
-      "supplier": { "name": "BeyondTrust" },
+      "supplier": {
+        "name": "BeyondTrust"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "pam" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "beyondtrust" }
+        {
+          "name": "asset.role",
+          "value": "pam"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "beyondtrust"
+        }
       ]
     },
     {
@@ -99,11 +177,22 @@
       "name": "Palo Alto PAN-OS",
       "version": "11.1",
       "cpe": "cpe:2.3:o:paloaltonetworks:pan-os:11.*:*:*:*:*:*:*:*",
-      "supplier": { "name": "Palo Alto Networks" },
+      "supplier": {
+        "name": "Palo Alto Networks"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "perimeter_firewall" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "palo alto" }
+        {
+          "name": "asset.role",
+          "value": "perimeter_firewall"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "palo alto"
+        }
       ]
     },
     {
@@ -112,12 +201,26 @@
       "name": "Amazon EKS",
       "version": "1.30",
       "cpe": "cpe:2.3:a:amazon:elastic_kubernetes_service:*:*:*:*:*:*:*:*",
-      "supplier": { "name": "Amazon Web Services" },
+      "supplier": {
+        "name": "Amazon Web Services"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "container_orchestration" },
-        { "name": "criticality", "value": "medium" },
-        { "name": "match_alias", "value": "eks" },
-        { "name": "match_alias", "value": "kubernetes" }
+        {
+          "name": "asset.role",
+          "value": "container_orchestration"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        },
+        {
+          "name": "match_alias",
+          "value": "eks"
+        },
+        {
+          "name": "match_alias",
+          "value": "kubernetes"
+        }
       ]
     },
     {
@@ -126,10 +229,18 @@
       "name": "PostgreSQL",
       "version": "16",
       "cpe": "cpe:2.3:a:postgresql:postgresql:16.*:*:*:*:*:*:*:*",
-      "supplier": { "name": "PostgreSQL Global Development Group" },
+      "supplier": {
+        "name": "PostgreSQL Global Development Group"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "research_database" },
-        { "name": "criticality", "value": "high" }
+        {
+          "name": "asset.role",
+          "value": "research_database"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        }
       ]
     },
     {
@@ -138,11 +249,22 @@
       "name": "Oracle Database",
       "version": "19c",
       "cpe": "cpe:2.3:a:oracle:database_server:19c:*:*:*:*:*:*:*",
-      "supplier": { "name": "Oracle" },
+      "supplier": {
+        "name": "Oracle"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "clinical_database" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "oracle" }
+        {
+          "name": "asset.role",
+          "value": "clinical_database"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "oracle"
+        }
       ]
     },
     {
@@ -150,11 +272,22 @@
       "bom-ref": "splunk-siem-vanguard",
       "name": "Splunk Enterprise",
       "version": "9.2",
-      "supplier": { "name": "Splunk" },
+      "supplier": {
+        "name": "Splunk"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "siem" },
-        { "name": "criticality", "value": "medium" },
-        { "name": "match_alias", "value": "splunk" }
+        {
+          "name": "asset.role",
+          "value": "siem"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        },
+        {
+          "name": "match_alias",
+          "value": "splunk"
+        }
       ]
     },
     {
@@ -163,10 +296,18 @@
       "name": "Nginx",
       "version": "1.26",
       "cpe": "cpe:2.3:a:nginx:nginx:1.26.*:*:*:*:*:*:*:*",
-      "supplier": { "name": "F5 Networks" },
+      "supplier": {
+        "name": "F5 Networks"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "web_server" },
-        { "name": "criticality", "value": "medium" }
+        {
+          "name": "asset.role",
+          "value": "web_server"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        }
       ]
     },
     {
@@ -175,11 +316,22 @@
       "name": "Apache HTTP Server",
       "version": "2.4.58",
       "cpe": "cpe:2.3:a:apache:http_server:2.4.58:*:*:*:*:*:*:*",
-      "supplier": { "name": "Apache Software Foundation" },
+      "supplier": {
+        "name": "Apache Software Foundation"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "web_server_secondary" },
-        { "name": "criticality", "value": "medium" },
-        { "name": "match_alias", "value": "apache" }
+        {
+          "name": "asset.role",
+          "value": "web_server_secondary"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        },
+        {
+          "name": "match_alias",
+          "value": "apache"
+        }
       ]
     },
     {
@@ -187,87 +339,18 @@
       "bom-ref": "microsoft-365-vanguard",
       "name": "Microsoft 365",
       "version": "current",
-      "supplier": { "name": "Microsoft" },
+      "supplier": {
+        "name": "Microsoft"
+      },
       "properties": [
-        { "name": "asset.role",  "value": "productivity_suite" },
-        { "name": "criticality", "value": "medium" }
-      ]
-    }
-  ],
-  "vulnerabilities": [
-    {
-      "id": "VBP-RISK-0001",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "high" }],
-      "description": "Linux kernel privilege escalation vulnerabilities on RHEL research workstations. Attackers exploit kernel netfilter and use-after-free flaws to gain root access and move laterally across research compute nodes containing proprietary drug discovery data.",
-      "affects": [{ "ref": "rhel-research" }],
-      "known_cves": [
-        "CVE-2024-1086", "CVE-2023-3390", "CVE-2023-32233",
-        "CVE-2024-26633", "CVE-2024-26925"
-      ]
-    },
-    {
-      "id": "VBP-RISK-0002",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "high" }],
-      "description": "VMware ESXi ransomware targeting virtualised research and clinical workload clusters. ESXiArgs-style campaigns encrypt VM datastores holding LIMS data and electronic signature workflows, disrupting GxP-regulated processes.",
-      "affects": [{ "ref": "vmware-esxi-vanguard" }, { "ref": "vmware-vsphere-vanguard" }],
-      "known_cves": [
-        "CVE-2021-21974", "CVE-2021-22005",
-        "CVE-2023-20867", "CVE-2023-20869",
-        "CVE-2024-22252", "CVE-2024-22254"
-      ]
-    },
-    {
-      "id": "VBP-RISK-0003",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "high" }],
-      "description": "Okta identity platform phishing and session token theft. Threat actors target Okta tenants via support ticket social engineering and adversary-in-the-middle phishing to harvest session cookies, bypassing MFA and gaining access to federated research SaaS applications.",
-      "affects": [{ "ref": "okta-identity" }],
-      "known_cves": [
-        "CVE-2024-5291", "CVE-2022-25244"
-      ]
-    },
-    {
-      "id": "VBP-RISK-0004",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "high" }],
-      "description": "Palo Alto PAN-OS critical vulnerability exploitation enabling unauthenticated remote code execution on perimeter firewalls. CVE-2024-3400 is actively exploited by state-sponsored actors for initial access into pharmaceutical and research networks.",
-      "affects": [{ "ref": "paloalto-ngfw" }],
-      "known_cves": [
-        "CVE-2024-3400", "CVE-2025-0108", "CVE-2024-9474",
-        "CVE-2024-2550", "CVE-2024-2551"
-      ]
-    },
-    {
-      "id": "VBP-RISK-0005",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "high" }],
-      "description": "Oracle Database exploitation targeting clinical trial data repositories. SQL injection, privilege escalation via listener vulnerabilities, and unpatched critical patches enable exfiltration of patient data and intellectual property under 21 CFR Part 11 scope.",
-      "affects": [{ "ref": "oracle-database" }, { "ref": "postgresql-vanguard" }],
-      "known_cves": [
-        "CVE-2024-21126", "CVE-2024-21001", "CVE-2023-21893",
-        "CVE-2023-2454", "CVE-2023-5869"
-      ]
-    },
-    {
-      "id": "VBP-RISK-0006",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "medium" }],
-      "description": "Amazon EKS and container supply chain risk for bioinformatics pipeline. Malicious container images or compromised GitHub Actions workflows can inject backdoors into analysis pipelines processing genomic research data.",
-      "affects": [{ "ref": "amazon-eks" }],
-      "known_cves": [
-        "CVE-2023-3676", "CVE-2023-3955", "CVE-2024-5321"
-      ]
-    },
-    {
-      "id": "VBP-RISK-0007",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [{ "severity": "high" }],
-      "description": "BeyondTrust PAM platform exploitation enabling privileged credential theft. Attackers targeting PAM solutions can extract stored credentials for all privileged accounts across research, clinical, and infrastructure systems.",
-      "affects": [{ "ref": "beyondtrust-pam" }],
-      "known_cves": [
-        "CVE-2024-12356", "CVE-2024-12686"
+        {
+          "name": "asset.role",
+          "value": "productivity_suite"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        }
       ]
     }
   ]

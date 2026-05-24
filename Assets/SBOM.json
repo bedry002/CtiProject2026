@@ -39,9 +39,18 @@
         "name": "Microsoft"
       },
       "properties": [
-        { "name": "asset.role",   "value": "pos_terminal" },
-        { "name": "asset.group",  "value": "Retail POS" },
-        { "name": "criticality",  "value": "high" }
+        {
+          "name": "asset.role",
+          "value": "pos_terminal"
+        },
+        {
+          "name": "asset.group",
+          "value": "Retail POS"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        }
       ]
     },
     {
@@ -54,9 +63,18 @@
         "name": "Microsoft"
       },
       "properties": [
-        { "name": "asset.role",  "value": "store_server" },
-        { "name": "asset.group", "value": "Store Servers" },
-        { "name": "criticality", "value": "high" }
+        {
+          "name": "asset.role",
+          "value": "store_server"
+        },
+        {
+          "name": "asset.group",
+          "value": "Store Servers"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        }
       ]
     },
     {
@@ -69,10 +87,22 @@
         "name": "Canonical"
       },
       "properties": [
-        { "name": "asset.role",   "value": "ecommerce_host" },
-        { "name": "asset.group",  "value": "E-Commerce Services" },
-        { "name": "criticality",  "value": "high" },
-        { "name": "match_alias",  "value": "ubuntu" }
+        {
+          "name": "asset.role",
+          "value": "ecommerce_host"
+        },
+        {
+          "name": "asset.group",
+          "value": "E-Commerce Services"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "ubuntu"
+        }
       ]
     },
     {
@@ -85,8 +115,14 @@
         "name": "VMware"
       },
       "properties": [
-        { "name": "asset.role",  "value": "virtualisation_platform" },
-        { "name": "criticality", "value": "high" }
+        {
+          "name": "asset.role",
+          "value": "virtualisation_platform"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        }
       ]
     },
     {
@@ -99,8 +135,14 @@
         "name": "VMware"
       },
       "properties": [
-        { "name": "asset.role",  "value": "hypervisor" },
-        { "name": "criticality", "value": "high" }
+        {
+          "name": "asset.role",
+          "value": "hypervisor"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        }
       ]
     },
     {
@@ -113,8 +155,14 @@
         "name": "F5 Networks"
       },
       "properties": [
-        { "name": "asset.role",  "value": "web_server" },
-        { "name": "criticality", "value": "high" }
+        {
+          "name": "asset.role",
+          "value": "web_server"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        }
       ]
     },
     {
@@ -126,9 +174,18 @@
         "name": "Microsoft"
       },
       "properties": [
-        { "name": "asset.role",  "value": "primary_database" },
-        { "name": "data.class",  "value": "payment_card_data" },
-        { "name": "criticality", "value": "high" }
+        {
+          "name": "asset.role",
+          "value": "primary_database"
+        },
+        {
+          "name": "data.class",
+          "value": "payment_card_data"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        }
       ]
     },
     {
@@ -141,8 +198,14 @@
         "name": "PostgreSQL Global Development Group"
       },
       "properties": [
-        { "name": "asset.role",  "value": "ecommerce_database" },
-        { "name": "criticality", "value": "high" }
+        {
+          "name": "asset.role",
+          "value": "ecommerce_database"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        }
       ]
     },
     {
@@ -155,8 +218,14 @@
         "name": "Fortinet"
       },
       "properties": [
-        { "name": "asset.role",  "value": "perimeter_firewall" },
-        { "name": "criticality", "value": "high" }
+        {
+          "name": "asset.role",
+          "value": "perimeter_firewall"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        }
       ]
     },
     {
@@ -168,10 +237,22 @@
         "name": "Microsoft"
       },
       "properties": [
-        { "name": "asset.role",  "value": "cloud_identity" },
-        { "name": "criticality", "value": "high" },
-        { "name": "match_alias", "value": "entra id" },
-        { "name": "match_alias", "value": "entra" }
+        {
+          "name": "asset.role",
+          "value": "cloud_identity"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        },
+        {
+          "name": "match_alias",
+          "value": "entra id"
+        },
+        {
+          "name": "match_alias",
+          "value": "entra"
+        }
       ]
     },
     {
@@ -184,8 +265,14 @@
         "name": "Microsoft"
       },
       "properties": [
-        { "name": "asset.role",  "value": "on_prem_identity" },
-        { "name": "criticality", "value": "high" }
+        {
+          "name": "asset.role",
+          "value": "on_prem_identity"
+        },
+        {
+          "name": "criticality",
+          "value": "high"
+        }
       ]
     },
     {
@@ -197,8 +284,14 @@
         "name": "Microsoft"
       },
       "properties": [
-        { "name": "asset.role",  "value": "productivity_suite" },
-        { "name": "criticality", "value": "medium" }
+        {
+          "name": "asset.role",
+          "value": "productivity_suite"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        }
       ]
     },
     {
@@ -210,10 +303,22 @@
         "name": "Microsoft"
       },
       "properties": [
-        { "name": "asset.role",  "value": "container_orchestration" },
-        { "name": "criticality", "value": "medium" },
-        { "name": "match_alias", "value": "aks" },
-        { "name": "match_alias", "value": "kubernetes" }
+        {
+          "name": "asset.role",
+          "value": "container_orchestration"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        },
+        {
+          "name": "match_alias",
+          "value": "aks"
+        },
+        {
+          "name": "match_alias",
+          "value": "kubernetes"
+        }
       ]
     },
     {
@@ -225,8 +330,14 @@
         "name": "Salesforce"
       },
       "properties": [
-        { "name": "asset.role",  "value": "crm" },
-        { "name": "criticality", "value": "medium" }
+        {
+          "name": "asset.role",
+          "value": "crm"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        }
       ]
     },
     {
@@ -238,99 +349,19 @@
         "name": "Microsoft"
       },
       "properties": [
-        { "name": "asset.role",  "value": "siem" },
-        { "name": "criticality", "value": "medium" },
-        { "name": "match_alias", "value": "sentinel" }
+        {
+          "name": "asset.role",
+          "value": "siem"
+        },
+        {
+          "name": "criticality",
+          "value": "medium"
+        },
+        {
+          "name": "match_alias",
+          "value": "sentinel"
+        }
       ]
-    }
-  ],
-  "vulnerabilities": [
-    {
-      "id": "APEX-RISK-0001",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [ { "severity": "high" } ],
-      "description": "POS malware targeting payment card data on Windows POS terminals. Threat actors use memory scraping and skimmer implants to capture track data during card authorization.",
-      "affects": [ { "ref": "pos-windows11" } ],
-      "known_cves": [
-        "CVE-2025-21333", "CVE-2025-21334", "CVE-2025-21335",
-        "CVE-2024-38213", "CVE-2024-43572"
-      ],
-      "recommendation": "Deploy application allowlisting, PA-DSS validated POS software, and network-level P2PE."
-    },
-    {
-      "id": "APEX-RISK-0002",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [ { "severity": "high" } ],
-      "description": "Credential stuffing attacks targeting e-commerce customer login and loyalty account portals. High volume automated login attempts using leaked credential datasets.",
-      "affects": [ { "ref": "web-ubuntu2204" }, { "ref": "nginx-web" }, { "ref": "azure-sql" } ],
-      "known_cves": [
-        "CVE-2024-7264", "CVE-2024-9143",
-        "CVE-2024-32760", "CVE-2025-23419"
-      ],
-      "recommendation": "Enforce MFA on all customer accounts, deploy bot detection and CAPTCHA, monitor for high-velocity login failures."
-    },
-    {
-      "id": "APEX-RISK-0003",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [ { "severity": "high" } ],
-      "description": "VMware ESXi ransomware campaigns targeting hypervisor layer. Campaigns such as ESXiArgs exploit unpatched OpenSLP or HTTPS vulnerabilities to encrypt VM datastores and disable backup snapshots.",
-      "affects": [ { "ref": "vmware-esxi" }, { "ref": "vmware-vsphere" } ],
-      "known_cves": [
-        "CVE-2021-21974", "CVE-2021-21985", "CVE-2021-22005",
-        "CVE-2022-31696", "CVE-2022-31697", "CVE-2022-31699",
-        "CVE-2023-20867", "CVE-2023-20869", "CVE-2023-20870",
-        "CVE-2024-22252", "CVE-2024-22254", "CVE-2024-22255"
-      ],
-      "recommendation": "Apply VMware security patches promptly, disable OpenSLP service, restrict management network access."
-    },
-    {
-      "id": "APEX-RISK-0004",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [ { "severity": "high" } ],
-      "description": "SQL injection and data exfiltration risk against Azure SQL Database and PostgreSQL instances hosting cardholder data and customer PII. Web application input validation gaps may allow unauthorised data access.",
-      "affects": [ { "ref": "azure-sql" }, { "ref": "postgresql" } ],
-      "known_cves": [
-        "CVE-2023-2454", "CVE-2023-2455", "CVE-2023-5869",
-        "CVE-2024-0397", "CVE-2024-10978", "CVE-2024-10979"
-      ],
-      "recommendation": "Enforce parameterised queries, deploy WAF rules, enable Azure Defender for SQL, restrict DB egress."
-    },
-    {
-      "id": "APEX-RISK-0005",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [ { "severity": "high" } ],
-      "description": "Phishing campaigns targeting Microsoft 365 and Entra ID credentials. Business email compromise and OAuth token theft can lead to account takeover and lateral movement across Azure-connected services.",
-      "affects": [ { "ref": "microsoft-365" }, { "ref": "entra-id" } ],
-      "known_cves": [
-        "CVE-2023-23397", "CVE-2024-21413",
-        "CVE-2023-36745", "CVE-2023-36744",
-        "CVE-2024-30103", "CVE-2024-38021"
-      ],
-      "recommendation": "Enforce phishing-resistant MFA (FIDO2/passkeys), deploy Defender for Office 365, enable Conditional Access policies."
-    },
-    {
-      "id": "APEX-RISK-0006",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [ { "severity": "medium" } ],
-      "description": "Supply chain compromise via CI/CD pipeline. Malicious package injection or poisoned build artefacts in Azure DevOps or GitHub Actions could propagate backdoors into production e-commerce containers.",
-      "affects": [ { "ref": "aks" } ],
-      "known_cves": [
-        "CVE-2023-3676", "CVE-2023-3955", "CVE-2023-3893",
-        "CVE-2024-5321"
-      ],
-      "recommendation": "Enforce signed commits, pin dependency versions, scan artefacts with SBOM tools, restrict pipeline permissions."
-    },
-    {
-      "id": "APEX-RISK-0007",
-      "source": { "name": "Internal Risk Assessment" },
-      "ratings": [ { "severity": "medium" } ],
-      "description": "Fortinet FortiGate SSL-VPN and management interface exposure. CVEs in FortiOS SSL-VPN have been actively exploited for initial access, enabling lateral movement to internal store networks.",
-      "affects": [ { "ref": "fortinet-fortigate" } ],
-      "known_cves": [
-        "CVE-2022-40684", "CVE-2023-27997", "CVE-2023-48788",
-        "CVE-2024-21762", "CVE-2024-55591", "CVE-2025-32756"
-      ],
-      "recommendation": "Restrict management access to trusted IPs, apply FortiOS patches, monitor for anomalous VPN sessions."
     }
   ]
 }

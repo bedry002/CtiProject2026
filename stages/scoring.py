@@ -26,13 +26,12 @@ class BusinessProfile:
 
 @dataclass
 class ScoringWeights:
-    asset:      float = 0.30
-    technology: float = 0.30
-    sector:     float = 0.30
-    geography:  float = 0.10
+    stack:  float = 0.50   # combined SBOM + keywords + tech stack
+    sector: float = 0.25
+    ttp:    float = 0.25
 
     def __post_init__(self) -> None:
-        total = self.asset + self.technology + self.sector + self.geography
+        total = self.stack + self.sector + self.ttp
         assert abs(total - 1.0) < 1e-6, f"Weights must sum to 1.0, got {total}"
 
 
@@ -97,11 +96,15 @@ class ScoringStage(Stage):
         sbom: SBOMProfile | None = None,
         weights: ScoringWeights | None = None,
         threshold: float = 0.0,
+        attack_lookup: dict | None = None,
+        org_attack_platforms: set[str] | None = None,
     ) -> None:
-        self._profile   = profile
-        self._sbom      = sbom or SBOMProfile()
-        self._weights   = weights or ScoringWeights()
-        self._threshold = threshold
+        self._profile      = profile
+        self._sbom         = sbom or SBOMProfile()
+        self._weights      = weights or ScoringWeights()
+        self._threshold    = threshold
+        self._attack_lookup   = attack_lookup or {}
+        self._org_platforms   = org_attack_platforms or set()
 
         # Precompute per-component match terms — avoids recomputing for every event
         self._component_terms: list[tuple[SBOMComponent, list[str]]] = [
@@ -168,32 +171,60 @@ class ScoringStage(Stage):
 
         tech_s,   tech_matched   = _category_score([t.lower() for t in self._profile.technologies],  hay, saturation=0.30)
         sector_s, sector_matched = _category_score([t.lower() for t in self._profile.sectors],        hay, saturation=0.50)
-        geo_s,    geo_matched    = _category_score([t.lower() for t in self._profile.geographies],    hay, saturation=0.50)
 
         _, ioc_counts = _ioc_score(event.raw)
 
+        from pipeline.attack import ttp_relevance_score
+        ttp_s = ttp_relevance_score(
+            event.entities.get("ttps", []),
+            self._attack_lookup,
+            self._org_platforms,
+        )
+
+        # Geography excluded from scoring — displayed per-event in the report via NER entities
+        stack_s = min(1.0, asset_s + tech_s)
+
         confidence = round(
-            asset_s   * w.asset
-            + tech_s  * w.technology
+            stack_s    * w.stack
             + sector_s * w.sector
-            + geo_s   * w.geography,
+            + ttp_s    * w.ttp,
             4,
         )
 
+        # NVD CVEs for matched SBOM components — for report display only
+        matched_ref_set = set(sbom_refs)
+        nvd_cves: list[str] = []
+        for risk, cve_set in self._risk_cve_sets:
+            if any(ref in matched_ref_set for ref in risk.affected_refs):
+                nvd_cves.extend(sorted(cve_set)[:6])
+        event.entities["nvd_cves"] = list(dict.fromkeys(nvd_cves))[:15]
+
+        # Enrich TTP entries with ATT&CK metadata for report display
+        if self._attack_lookup:
+            for ttp in event.entities.get("ttps", []):
+                if not isinstance(ttp, dict):
+                    continue
+                info = self._attack_lookup.get(ttp.get("text", ""), {})
+                ttp["name"]         = info.get("name", "")
+                ttp["tactics"]      = info.get("tactics", [])
+                ttp["org_relevant"] = bool(info.get("platforms", set()) & self._org_platforms)
+
         event.confidence              = confidence
         event.matched_sbom_components = sbom_refs
-        event.matched_profile_terms   = kw_matched + tech_matched + sector_matched + geo_matched
+        event.matched_profile_terms   = kw_matched + tech_matched + sector_matched
         event.ioc_summary             = ioc_counts
         event.score_breakdown         = {
-            "asset":     round(asset_s,  4),
-            "sbom_cve":  round(cve_s,    4),
-            "tech":      round(tech_s,   4),
-            "sector":    round(sector_s, 4),
-            "geography": round(geo_s,    4),
+            "stack":          round(stack_s,            4),
+            "stack_contrib":  round(stack_s  * w.stack,  4),
+            "sbom_cve":       round(cve_s,              4),
+            "sector":         round(sector_s,            4),
+            "sector_contrib": round(sector_s * w.sector, 4),
+            "ttp":            round(ttp_s,               4),
+            "ttp_contrib":    round(ttp_s    * w.ttp,     4),
         }
         logger.debug(
-            "Event %s → %.4f  asset=%.3f tech=%.3f sector=%.3f geo=%.3f",
-            event.misp_id, confidence, asset_s, tech_s, sector_s, geo_s,
+            "Event %s → %.4f  stack=%.3f sector=%.3f ttp=%.3f",
+            event.misp_id, confidence, stack_s, sector_s, ttp_s,
         )
         return event
 

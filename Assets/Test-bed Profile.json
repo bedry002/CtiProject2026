@@ -1,44 +1,125 @@
 {
   "profile_id": "uuid-v4-apex-retail-2026-001",
-  "profile_version": "2.0",
+  "profile_version": "3.0-enriched",
   "created": "2026-05-18T00:00:00Z",
   "modified": "2026-05-24T00:00:00Z",
   "organisation": {
     "name": "Apex Retail Solutions",
     "naics_code": "4521",
-    "jurisdiction": ["US", "CA"],
-    "headquarters": "Chicago, Illinois, United States"
+    "jurisdiction": [
+      "US",
+      "CA"
+    ],
+    "headquarters": "Chicago, Illinois, United States",
+    "legal_name": "Apex Retail Solutions, Inc.",
+    "founded": 2009,
+    "employees": 4200,
+    "annual_revenue_usd": "1.8B",
+    "store_count": 312,
+    "ecommerce_platform": "Custom (Nginx + Ubuntu + PostgreSQL) with Salesforce Commerce integration",
+    "card_processing_volume": "~38M card transactions/year",
+    "business_model": "Omnichannel apparel and homewares retailer (brick-and-mortar + online)"
   },
   "sectors": [
-    "retail", "department stores", "e-commerce", "point-of-sale", "pos",
-    "payment card", "pci dss", "cardholder data"
+    "retail",
+    "department stores",
+    "e-commerce",
+    "online retail",
+    "point-of-sale",
+    "point of sale",
+    "payment card industry",
+    "pci dss",
+    "cardholder data",
+    "merchant",
+    "loyalty programme"
   ],
   "technologies": [
-    "vmware esxi", "vsphere", "windows server 2022", "windows 11",
-    "microsoft entra id", "active directory", "azure", "azure sql",
-    "fortinet fortigate", "nginx", "microsoft 365", "exchange online",
-    "postgresql", "salesforce", "microsoft dynamics 365",
-    "aks", "docker", "kubernetes", "microsoft sentinel",
-    "microsoft defender", "azure devops", "github actions",
-    "tenable nessus", "microsoft intune", "fortianalyzer",
-    "entra pim", "servicenow"
+    "vmware esxi",
+    "vsphere",
+    "windows server 2022",
+    "windows 11",
+    "microsoft entra id",
+    "active directory",
+    "azure",
+    "azure sql",
+    "fortinet fortigate",
+    "nginx",
+    "microsoft 365",
+    "exchange online",
+    "postgresql",
+    "salesforce",
+    "microsoft dynamics 365",
+    "aks",
+    "docker",
+    "kubernetes",
+    "microsoft sentinel",
+    "microsoft defender",
+    "azure devops",
+    "github actions",
+    "tenable nessus",
+    "microsoft intune",
+    "fortianalyzer",
+    "entra pim",
+    "servicenow"
   ],
   "geographies": [
-    "chicago", "illinois", "united states", "us", "canada", "ca"
+    "chicago",
+    "illinois",
+    "united states",
+    "canada",
+    "north america",
+    "ontario"
   ],
   "threat_actors": [
-    "fin7", "magecart", "scattered spider", "lapsus"
+    "fin7",
+    "fin8",
+    "magecart",
+    "scattered spider",
+    "lapsus$",
+    "carbanak",
+    "ta505",
+    "clop",
+    "lockbit",
+    "blackcat",
+    "alphv"
   ],
   "keywords": [
-    "pos malware", "point of sale malware", "card skimmer", "web skimmer",
-    "formjacking", "credential stuffing", "account takeover",
-    "payment card", "cardholder data", "phishing", "spear phishing",
-    "business email compromise", "bec", "ransomware", "esxiargs",
-    "lockbit", "blackcat", "data exfiltration", "double extortion",
-    "sql injection", "remote code execution", "rce", "supply chain",
-    "malicious package", "dependency confusion", "token theft",
-    "session hijacking", "password spray", "brute force", "zero day",
-    "0day", "exploit", "vulnerability", "cve"
+    "pos malware",
+    "point of sale malware",
+    "card skimmer",
+    "web skimmer",
+    "formjacking",
+    "credential stuffing",
+    "account takeover",
+    "payment card",
+    "cardholder data",
+    "phishing",
+    "spear phishing",
+    "business email compromise",
+    "ransomware",
+    "esxiargs",
+    "lockbit",
+    "blackcat",
+    "data exfiltration",
+    "double extortion",
+    "sql injection",
+    "remote code execution",
+    "supply chain",
+    "malicious package",
+    "dependency confusion",
+    "token theft",
+    "session hijacking",
+    "password spray",
+    "brute force",
+    "zero day",
+    "remote code execution",
+    "business email compromise",
+    "zero-day exploit",
+    "magecart skimmer",
+    "pos terminal malware",
+    "payment skimming",
+    "loyalty fraud",
+    "gift card fraud"
   ],
   "cpe_list": [
     "cpe:2.3:a:vmware:esxi:8.0:*:*:*:*:*:*:*",
@@ -47,6 +128,72 @@
     "cpe:2.3:a:fortinet:fortigate:*:*:*:*:*:*:*:*",
     "cpe:2.3:a:microsoft:exchange_server:*:*:*:*:*:*:*:*",
     "cpe:2.3:a:nginx:nginx:*:*:*:*:*:*:*:*",
-    "cpe:2.3:a:postgresql:postgresql:*:*:*:*:*:*:*:*"
-  ]
+    "cpe:2.3:a:postgresql:postgresql:*:*:*:*:*:*:*:*",
+    "cpe:2.3:a:microsoft:active_directory:*:*:*:*:*:*:*:*",
+    "cpe:2.3:a:vmware:vsphere:8.*:*:*:*:*:*:*:*",
+    "cpe:2.3:a:salesforce:salesforce:*:*:*:*:*:*:*:*"
+  ],
+  "risk_profile": {
+    "severity_threshold": "medium",
+    "maturity_level": "established",
+    "risk_tolerance": "low",
+    "alert_volume": "high",
+    "crown_jewels": [
+      "Cardholder data environment (CDE) \u2014 Azure SQL + POS terminals",
+      "E-commerce customer PII and credentials (PostgreSQL)",
+      "Microsoft Entra ID tenant (identity backbone)",
+      "VMware vSphere/ESXi estate (hosts all store + e-commerce workloads)"
+    ],
+    "regulatory_flags": [
+      "PCI DSS 4.0",
+      "CCPA",
+      "PIPEDA (Canada)",
+      "state breach-notification laws"
+    ],
+    "recent_incidents": [
+      {
+        "date": "2025-11",
+        "type": "credential stuffing",
+        "target": "loyalty portal",
+        "impact": "12k accounts locked, no confirmed compromise",
+        "status": "closed"
+      },
+      {
+        "date": "2025-08",
+        "type": "phishing",
+        "target": "finance staff (BEC attempt)",
+        "impact": "blocked by Defender for O365; no loss",
+        "status": "closed"
+      }
+    ],
+    "threat_notes": "Highest-concern scenarios: POS memory-scraping malware in stores, Magecart-style web skimmers on checkout, ESXi ransomware, and Entra ID account takeover via phishing. Seasonal risk spike Nov-Dec (peak retail)."
+  },
+  "operational_context": {
+    "peak_hours": "10:00-22:00 local, all timezones; e-commerce 24/7",
+    "high_risk_periods": "Black Friday through January sales \u2014 change-freeze window",
+    "security_team_size": 9,
+    "soc_model": "hybrid (in-house tier 1/2 + MSSP for tier 3 and after-hours)",
+    "skill_maturity": "established"
+  },
+  "governance": {
+    "profile_owner": "CISO Office",
+    "review_frequency": "monthly",
+    "audit_requirements": "Annual PCI DSS 4.0 RoC (Level 1 merchant); SOC 2 Type II for e-commerce platform",
+    "frameworks_aligned": [
+      "NIST CSF 2.0",
+      "CIS Controls v8.1",
+      "PCI DSS 4.0"
+    ]
+  },
+  "attack_surface": {
+    "internet_facing": true,
+    "internet_facing_notes": "E-commerce site (Nginx/Ubuntu), FortiGate SSL-VPN, Entra ID/M365 cloud surface",
+    "public_web_applications": true,
+    "remote_workforce": "moderate (corporate HQ + regional managers)",
+    "cloud_native": false,
+    "cloud_notes": "Hybrid \u2014 Azure-hosted e-commerce + on-prem VMware store estate",
+    "ics_ot_present": false,
+    "third_party_integrations": "payment processor, Salesforce, shipping carriers, loyalty vendor"
+  },
+  "_enrichment_note": "Functional fields (sectors/technologies/geographies/keywords) de-noised for word-boundary matching. risk_profile, operational_context, governance, attack_surface are decorative (not consumed by ScoringStage today)."
 }

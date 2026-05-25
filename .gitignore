@@ -23,3 +23,7 @@ data/
 # Models (large binaries)
 models/*.bin
 models/*.pkl
+synthetic_labels.csv
+export_corpus.py
+corpus.jsonl.sample.jsonl
+corpus.jsonl

@@ -21,7 +21,7 @@ from config import (
     BUSINESS_PROFILE, SBOM_PROFILE, RAW_PROFILE, CONFIDENCE_THRESHOLD,
     PIPELINE_CONTINUE_ON_STAGE_ERROR,
     POLL_INTERVAL_SECONDS, POLL_STATE_PATH, POLL_RUN_ONCE,
-    POLL_LOOKBACK_HOURS, POLL_RESET_STATE, TAGGER_DRY_RUN, LLM_SKIP,
+    POLL_LOOKBACK_HOURS, POLL_RESET_STATE, TAGGER_DRY_RUN, LLM_SKIP, FETCH_LIMIT,
 )
 from pipeline.runner import Pipeline
 from stages.ingest import MISPIngestStage
@@ -94,7 +94,7 @@ def main() -> None:
 
     while True:
         poll_start = int(time.time())
-        events = ingest.fetch(since_timestamp=last_seen)
+        events = ingest.fetch(since_timestamp=last_seen, max_events=FETCH_LIMIT)
 
         if events:
             # ScoringStage already drops below-threshold events, so results == relevant

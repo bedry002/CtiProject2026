@@ -45,6 +45,7 @@ CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.20"))
 
 # Polling loop
 POLL_INTERVAL_SECONDS = int(os.getenv("POLL_INTERVAL_SECONDS", "30"))
+FETCH_LIMIT           = int(os.getenv("FETCH_LIMIT", "0"))   # 0 = unlimited
 POLL_STATE_PATH       = os.getenv("POLL_STATE_PATH", "data/poll_state.txt")
 POLL_RUN_ONCE         = os.getenv("POLL_RUN_ONCE", "false").strip().lower() == "true"
 POLL_LOOKBACK_HOURS   = int(os.getenv("POLL_LOOKBACK_HOURS", "24"))

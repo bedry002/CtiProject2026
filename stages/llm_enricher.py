@@ -6,11 +6,13 @@ analyst-facing narrative into ``event.analyst_summary``.
 Environment variables
 ---------------------
 LLM_API_URL        : Chat completions endpoint (default: OpenAI).
-LLM_API_KEY        : Bearer token.
-LLM_MODEL          : Model name.
+LLM_API_KEY        : Bearer token. Use "ollama" for local Ollama instances.
+LLM_MODEL          : Model name (e.g. gpt-4o-mini, qwen2.5:14b, llama3.1:8b).
 LLM_TEMPERATURE    : Sampling temperature (default 0.4).
 LLM_MAX_TOKENS     : Max tokens in the response (default 512).
-LLM_TIMEOUT_SECONDS: HTTP timeout (default 30).
+LLM_TIMEOUT_SECONDS: HTTP timeout in seconds (default 30; use 120+ for local models).
+LLM_JSON_MODE      : Send response_format=json_object (default true). Set false
+                     for Ollama models that do not support the parameter.
 """
 
 from __future__ import annotations
@@ -37,6 +39,10 @@ _MODEL       = os.environ.get("LLM_MODEL", "gpt-4o-mini")
 _TEMPERATURE = float(os.environ.get("LLM_TEMPERATURE", "0.4"))
 _MAX_TOKENS  = int(os.environ.get("LLM_MAX_TOKENS", "512"))
 _TIMEOUT     = int(os.environ.get("LLM_TIMEOUT_SECONDS", "30"))
+# JSON mode sends response_format={"type":"json_object"} — supported by OpenAI and
+# recent Ollama builds, but not all local models.  Set LLM_JSON_MODE=false for
+# models that reject the parameter (the JSON is extracted via regex as fallback).
+_JSON_MODE   = os.environ.get("LLM_JSON_MODE", "true").strip().lower() == "true"
 
 _CTI_TEXT_MAX_CHARS = 1200
 
@@ -90,16 +96,32 @@ def _sanitise_cti_text(raw_text: str) -> str:
     return cleaned[:_CTI_TEXT_MAX_CHARS]
 
 
+def _coerce_str_list(value: Any) -> list[str]:
+    """Coerce a list field to list[str], handling LLM responses that return
+    dicts (e.g. [{"flag": "text"}]) instead of plain strings."""
+    if not isinstance(value, list):
+        return []
+    out: list[str] = []
+    for item in value:
+        if isinstance(item, str):
+            out.append(item.strip())
+        elif isinstance(item, dict):
+            # Take the first non-empty string value found in the dict
+            for v in item.values():
+                if isinstance(v, str) and v.strip():
+                    out.append(v.strip())
+                    break
+    return [s for s in out if s]
+
+
 def _normalise_result(result: dict) -> dict:
     result = result if isinstance(result, dict) else {}
     result.setdefault("analyst_summary", "")
     result.setdefault("matched_dimensions", [])
     result.setdefault("implicit_relevance_flags", [])
-    result["analyst_summary"] = str(result.get("analyst_summary") or "").strip()
-    if not isinstance(result["matched_dimensions"], list):
-        result["matched_dimensions"] = []
-    if not isinstance(result["implicit_relevance_flags"], list):
-        result["implicit_relevance_flags"] = []
+    result["analyst_summary"]          = str(result.get("analyst_summary") or "").strip()
+    result["matched_dimensions"]       = _coerce_str_list(result["matched_dimensions"])
+    result["implicit_relevance_flags"] = _coerce_str_list(result["implicit_relevance_flags"])
     return result
 
 
@@ -153,6 +175,7 @@ class LLMEnricherStage(Stage):
         timeout: int | None = None,
         profile_context: dict[str, Any] | None = None,
         min_confidence: float = 0.10,
+        json_mode: bool | None = None,
     ) -> None:
         self._api_url       = api_url or _API_URL
         self._api_key       = api_key or _API_KEY
@@ -161,6 +184,7 @@ class LLMEnricherStage(Stage):
         self._max_tokens    = max_tokens or _MAX_TOKENS
         self._timeout       = timeout or _TIMEOUT
         self._min_confidence = min_confidence
+        self._json_mode     = json_mode if json_mode is not None else _JSON_MODE
 
         ctx = profile_context or {}
 
@@ -270,16 +294,18 @@ class LLMEnricherStage(Stage):
         )
 
     def _call_llm(self, user_message: str, max_attempts: int = 3) -> dict[str, Any]:
-        payload = json.dumps({
+        body: dict[str, Any] = {
             "model": self._model,
             "temperature": self._temperature,
             "max_tokens": self._max_tokens,
-            "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user",   "content": user_message},
             ],
-        }).encode("utf-8")
+        }
+        if self._json_mode:
+            body["response_format"] = {"type": "json_object"}
+        payload = json.dumps(body).encode("utf-8")
 
         last_exc: Exception | None = None
         for attempt in range(max_attempts):

@@ -11,12 +11,14 @@ dist/
 build/
 
 # Pipeline output
-reports/
+reports/curation_report.html
 data/
+
 
 # IDE
 .vscode/settings.json
 .idea/
+.claude
 
 # Models (large binaries)
 models/*.bin

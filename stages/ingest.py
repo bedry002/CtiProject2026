@@ -36,9 +36,16 @@ class MISPIngestStage(Stage):
     def __init__(self, url: str, key: str, verifycert: bool = True) -> None:
         self._client = PyMISP(url, key, verifycert)
 
-    def fetch(self, since_timestamp: int) -> list[CurationEvent]:
-        """Pull narrative CTI events from MISP, skipping bulk IOC feeds."""
-        logger.info("Polling for events since timestamp=%d", since_timestamp)
+    def fetch(self, since_timestamp: int, max_events: int = 0) -> list[CurationEvent]:
+        """Pull narrative CTI events from MISP, skipping bulk IOC feeds.
+
+        max_events: cap the total number of events processed (0 = unlimited).
+                    Useful for test runs — set FETCH_LIMIT in the environment.
+        """
+        logger.info(
+            "Polling for events since timestamp=%d (max_events=%s)",
+            since_timestamp, max_events or "unlimited",
+        )
 
         stubs: list[MISPEvent] = []
         page = 1
@@ -51,6 +58,9 @@ class MISPIngestStage(Stage):
             if not batch:
                 break
             stubs.extend(cast(list[MISPEvent], batch))
+            if max_events and len(stubs) >= max_events:
+                stubs = stubs[:max_events]
+                break
             if len(batch) < _PAGE_SIZE:
                 break
             page += 1

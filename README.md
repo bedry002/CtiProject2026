@@ -109,7 +109,7 @@ The org profile tells the engine what your organisation looks like so it can jud
 | `geographies` | Regions of operation |
 | `keywords` | High-signal threat phrases — even a single match scores well |
 | `threat_actors` | Tracked adversaries flagged by NER |
-| `cpe_list` | CPE identifiers for NVD CVE enrichment and SBOM injection |
+| `cpe_list` | CPE identifiers injected as synthetic SBOM components for scoring |
 
 ---
 
@@ -152,13 +152,14 @@ Component criticality (`high`, `medium`, `low`) controls how much weight a match
 
 ## Scoring explained
 
-Each event receives a confidence score between 0 and 1, computed from three weighted dimensions:
+Each event receives a confidence score between 0 and 1, computed from four weighted dimensions:
 
 | Dimension | Default weight | What it measures |
 |---|---|---|
-| Stack | 50% | SBOM component mentions + keyword hits + technology matches |
-| Sector | 25% | How many of your sector terms appear in the event |
-| TTP | 25% | ATT&CK techniques in the event that target your platform set |
+| Asset | 30% | SBOM component mentions + keyword hits |
+| Technology | 30% | Technology terms from your profile appearing in the event |
+| Sector | 30% | Sector terms from your profile appearing in the event |
+| Geography | 10% | Geography terms from your profile appearing in the event |
 
 Events are then banded:
 
@@ -213,22 +214,13 @@ LLM_API_URL=https://api.groq.com/openai/v1/chat/completions
 LLM_MODEL=llama-3.3-70b-versatile
 ```
 
-### NVD CVE enrichment (optional)
-
-Enriches SBOM components with CVEs from the NVD API at startup.
-
+For local Ollama:
 ```env
-NVD_ENRICH=true
-NVD_API_KEY=your_nvd_key       # Get a free key at nvd.nist.gov for higher rate limits
-```
-
-> **Note:** CPEs in the SBOM must use pinned version numbers (e.g. `1.24.0`) not wildcards (`1.24.*`) for the NVD API to accept them.
-
-### MITRE ATT&CK TTP scoring (optional)
-
-```env
-ATTACK_ENABLED=true
-# Bundle downloaded once (~50 MB) and cached at ATTACK_BUNDLE_PATH
+LLM_API_URL=http://localhost:11434/v1/chat/completions
+LLM_API_KEY=ollama
+LLM_MODEL=llama3.1:8b
+LLM_JSON_MODE=false        # set true only if your Ollama build supports json_object mode
+LLM_TIMEOUT_SECONDS=120    # local models are slower
 ```
 
 ---
@@ -290,24 +282,19 @@ docker run -d \
 from dotenv import load_dotenv
 load_dotenv()
 
-from config import BUSINESS_PROFILE, SBOM_PROFILE, CONFIDENCE_THRESHOLD, ATTACK_LOOKUP, ORG_ATTACK_PLATFORMS
+from config import BUSINESS_PROFILE, SBOM_PROFILE, CONFIDENCE_THRESHOLD
 from pipeline.runner import Pipeline
 from stages.ingest import MISPIngestStage
 from stages.ner import NERStage
 from stages.scoring import ScoringStage
 from stages.report import ReportStage
 import pathlib, time
-from pymisp import PyMISP
-
-misp = PyMISP("https://your-misp", "your-key", False)
 
 pipeline = Pipeline([
     NERStage(),
     ScoringStage(
         BUSINESS_PROFILE, SBOM_PROFILE,
         threshold=CONFIDENCE_THRESHOLD,
-        attack_lookup=ATTACK_LOOKUP,
-        org_attack_platforms=ORG_ATTACK_PLATFORMS,
     ),
     ReportStage(pathlib.Path("reports/report.html"), threshold=CONFIDENCE_THRESHOLD),
 ])
@@ -374,12 +361,9 @@ pytest tests/ -v
 - Run with `POLL_LOOKBACK_HOURS=500` to cast a wider net and see if older events score better.
 
 **Events scoring lower than expected**
-- The `ttp` dimension (25% weight) is 0 unless `ATTACK_ENABLED=true`.
-- Check your SBOM component terms — very generic component names like `server` are excluded to prevent false positives.
-- Broaden `keywords` in your profile to cover common threat categories relevant to your sector.
-
-**NVD warnings at startup**
-- CPEs with wildcard versions (`1.24.*`) are rejected by the NVD API. Use pinned versions in your SBOM/profile CPEs.
+- Check your SBOM component terms — very generic names like `server` are excluded to prevent false positives.
+- Broaden `keywords` in your profile; keyword hits feed the `asset` dimension and even a single match contributes meaningfully.
+- Check that `technologies`, `sectors`, and `geographies` in your profile match terms that actually appear in event text.
 
 **spaCy model not found**
 - Set `SPACY_AUTO_DOWNLOAD=true` in `.env` and the model will be downloaded on first run.
@@ -395,6 +379,7 @@ pytest tests/ -v
 ```
 main.py          Polling loop entry point
 config.py        Loads .env, profile, SBOM — all config in one place
+evaluate.py      Offline scoring evaluation (assert-synthetic, sweep, kappa)
 pipeline/        Framework: Stage base class, Pipeline runner, event model, helpers
 stages/          One file per pipeline stage
 Assets/          Org profiles and SBOMs — swap to change target organisation

@@ -16,6 +16,7 @@ The engine connects to a MISP instance, pulls cyber threat intelligence (CTI) ev
 CtiProject2026/
 ├── main.py                  Entry point — polling loop
 ├── config.py                Central configuration — loads .env, profile, SBOM
+├── evaluate.py              Offline evaluation tool (assert-synthetic, sweep, kappa)
 ├── form_api.py              FastAPI web endpoint for submitting org profiles
 ├── orchestrator.py          Legacy orchestrator (superseded by main.py)
 │
@@ -24,11 +25,8 @@ CtiProject2026/
 │   ├── runner.py            Pipeline — drives events through stages
 │   ├── event.py             CurationEvent data model
 │   ├── text.py              Event-to-text conversion helpers
-│   ├── constants.py         Shared constants (confidence bands)
-│   ├── sbom.py              SBOM parser and data model
-│   ├── naics.py             NAICS sector code → sector terms
-│   ├── nvd.py               NVD CPE→CVE enrichment with cache
-│   └── attack.py            MITRE ATT&CK bundle loader and TTP scorer
+│   ├── constants.py         Shared constants (confidence bands, skip-terms)
+│   └── sbom.py              SBOM parser and data model
 │
 ├── stages/                  Pipeline stages — one file per stage
 │   ├── ingest.py            Stage 1 — Fetch events from MISP
@@ -52,15 +50,13 @@ CtiProject2026/
 │
 ├── data/                    Runtime data — created on first run
 │   ├── poll_state.txt        Timestamp of last successful poll
-│   ├── nvd_cache.json        NVD API response cache (7-day TTL)
-│   ├── mitre_attack_cache.json   ATT&CK STIX bundle cache
-│   └── mitre_actor_cache.json    Threat actor cache
+│   └── mitre_actor_cache.json    Threat actor cache (used by NER)
 │
 ├── reports/
 │   └── curation_report.html  Latest HTML scoring report
 │
 ├── tests/                   test suite
-├── .env                     Local secrets and overrides 
+├── .env                     Local secrets and overrides
 ├── .env.template            Safe template to share
 └── requirements.txt
 ```
@@ -82,9 +78,10 @@ MISP instance
     │  entities populated
     ▼
 [3] ScoringStage            Compute a [0,1] confidence score from:
-    │                         stack  (SBOM hits + keyword hits + tech hits)
-    │                         sector (sector term matches)
-    │                         ttp    (MITRE ATT&CK TTP relevance)
+    │                         asset      (SBOM hits + keyword hits)
+    │                         technology (tech term matches)
+    │                         sector     (sector term matches)
+    │                         geography  (geography term matches)
     │                       Drop events below CONFIDENCE_THRESHOLD.
     │  confidence populated
     ▼
@@ -179,19 +176,22 @@ The org asset index (`OrgAssets`) is built once per unique (profile_path, sbom_p
 
 ### `stages/scoring.py` — ScoringStage
 
-Computes a composite score from three weighted dimensions:
+Computes a composite score from four weighted dimensions:
 
 | Dimension | Default weight | What it measures |
 |---|---|---|
-| `stack` | 0.50 | `min(1.0, sbom_score + keyword_score + tech_score)` |
-| `sector` | 0.25 | Fraction of org sector terms appearing in event text |
-| `ttp` | 0.25 | ATT&CK TTP relevance to org platforms (0 if ATTACK_ENABLED=false) |
+| `asset` | 0.30 | `min(1.0, sbom_score + keyword_score)` |
+| `technology` | 0.30 | Technology term matches (saturation at 30% of terms) |
+| `sector` | 0.30 | Sector term matches (saturation at 50% of terms) |
+| `geography` | 0.10 | Geography term matches (saturation at 50% of terms) |
 
-**SBOM scoring:** Each SBOM component has a `weight` (1.0=high, 0.6=medium, 0.3=low). The raw score is `sum(matched weights) / total_weight`. CVE cross-reference (event CVEs matched against SBOM risk entries) can upgrade the SBOM score. NER-confirmed asset hits add a small boost (up to +0.20).
+**SBOM scoring:** Each SBOM component has a `weight` (1.0=high, 0.6=medium, 0.3=low). In default mode the asset sub-score saturates at `SCORING_ASSET_SAT_CAP` (default 1.0), so adding more SBOM components never dilutes an existing match. CVE cross-reference (event CVEs matched against SBOM risk entries) can upgrade the SBOM score. NER-confirmed asset hits add a small boost (up to +0.20).
 
-**Keyword scoring:** `specific_keywords` from the profile are matched at a very low saturation (0.006), meaning even a single keyword hit yields a meaningful contribution.
+**Keyword scoring:** `specific_keywords` from the profile are matched at a very low saturation (0.006), meaning even a single keyword hit yields a meaningful contribution. These are combined with the SBOM score into the `asset` dimension.
 
-**Saturation:** Category scores use a saturation parameter — hitting `saturation` fraction of terms gives a score of 1.0. This prevents needing 100% term coverage to score well.
+**Word-boundary matching:** By default (`SCORING_WORD_BOUNDARY=true`) terms are matched with lookaround anchors so short terms like `us`, `rce`, or `pos` cannot fire inside longer words. Set to `false` for ablation.
+
+**Saturation:** Category scores saturate — hitting the saturation fraction of terms gives a score of 1.0. This prevents needing 100% term coverage to score well.
 
 Events below `CONFIDENCE_THRESHOLD` are dropped and do not reach later stages.
 
@@ -230,6 +230,20 @@ Renders a self-contained HTML file with a summary dashboard and a scored event t
 
 ---
 
+### `evaluate.py` — Offline evaluation tool
+
+Three sub-commands for validating and tuning scoring behaviour without a live MISP instance:
+
+| Sub-command | Purpose |
+|---|---|
+| `assert-synthetic` | Run the construct-by-design corpus through the scorer and assert each event lands in its expected band. Fast regression harness — no LLM, no MISP. |
+| `sweep` | Given a scored corpus and gold labels, sweep `CONFIDENCE_THRESHOLD` and report precision/recall/F1/accuracy at each step, plus the best-F1 threshold. |
+| `kappa` | Given two or more annotators' label columns, compute Cohen's/Fleiss' kappa to measure label reliability. |
+
+Run with `--use-pipeline` to import the real `ScoringStage`; the default uses an embedded reimplementation that works standalone without a `.env`.
+
+---
+
 ### `pipeline/sbom.py` — SBOM loader
 
 Parses a CycloneDX-style JSON SBOM into `SBOMProfile` (list of `SBOMComponent` + list of `SBOMRisk`). Each component has:
@@ -242,35 +256,9 @@ Parses a CycloneDX-style JSON SBOM into `SBOMProfile` (list of `SBOMComponent` +
 
 `inject_profile_cpes()` adds synthetic SBOM components for CPEs listed in the org profile but not found in the SBOM file — covering technology not discovered by Syft/Grype.
 
-`enrich_with_nvd()` appends NVD-sourced CVEs to risk entries. Called at startup from `config.py` when `NVD_ENRICH=true`.
-
----
-
-### `pipeline/nvd.py` — NVD enrichment
-
-Queries the NVD REST API (`/rest/json/cves/2.0`) to retrieve CVEs for each SBOM component's CPE. Results are cached in `data/nvd_cache.json` with a 7-day TTL. Rate-limited to ~0.65 seconds per request (NVD free tier: 5 requests/30 s). Pass `NVD_API_KEY` for the 50 req/30 s limit.
-
-**Known limitation:** NVD rejects wildcard version strings in CPEs (e.g. `1.24.*`). Use pinned versions in your SBOM or profile CPEs for enrichment to work.
-
----
-
-### `pipeline/attack.py` — MITRE ATT&CK
-
-Downloads the Enterprise ATT&CK STIX bundle on first run and caches it locally. Builds a lookup table of technique ID → `{name, tactics, platforms}`. At scoring time, each TTP extracted by NER is looked up; its platforms are intersected with the org's inferred platforms (derived from `technologies` in the profile). The TTP score reflects how many matched TTPs target the org's platform set.
-
-Enable with `ATTACK_ENABLED=true`. The bundle download is ~50 MB and runs once.
-
----
-
-### `pipeline/naics.py` — NAICS expansion
-
-Maps 2-digit NAICS sector codes to human-readable sector terms used in scoring. Called from `config.py` to augment profile sectors with terms implied by the org's NAICS code.
-
----
-
 ### `config.py` — Central configuration
 
-Reads `.env`, loads the org profile JSON and SBOM, constructs `BusinessProfile` and `SBOMProfile`, and exports all configuration constants consumed by `main.py`. Edit here to change profile paths, scoring settings, or to add new optional enrichments.
+Reads `.env`, loads the org profile JSON and SBOM, constructs `BusinessProfile` and `SBOMProfile`, and exports all configuration constants consumed by `main.py`. Edit here to change profile paths, scoring thresholds, or polling behaviour.
 
 ---
 
@@ -313,6 +301,9 @@ All settings are read from environment variables (loaded from `.env`).
 |---|---|---|
 | `CONFIDENCE_THRESHOLD` | `0.20` | Events below this score are dropped |
 | `PIPELINE_CONTINUE_ON_STAGE_ERROR` | `false` | Drop only failing events rather than aborting |
+| `SCORING_WORD_BOUNDARY` | `true` | Use lookaround anchors to prevent short terms matching inside longer words |
+| `SCORING_ASSET_SATURATION` | `false` | `true` = saturation mode (score saturates at cap); `false` = matched/total_weight |
+| `SCORING_ASSET_SAT_CAP` | `1.0` | Matched weight at which the asset sub-score saturates to 1.0 |
 
 ### Polling
 
@@ -323,6 +314,7 @@ All settings are read from environment variables (loaded from `.env`).
 | `POLL_RUN_ONCE` | `false` | Exit after a single poll (useful for testing) |
 | `POLL_LOOKBACK_HOURS` | `24` | How far back the very first run looks |
 | `POLL_RESET_STATE` | `false` | Ignore saved timestamp and start fresh |
+| `FETCH_LIMIT` | `0` | Max events fetched per poll cycle (0 = unlimited) |
 
 ### Tagging
 
@@ -336,33 +328,18 @@ All settings are read from environment variables (loaded from `.env`).
 |---|---|---|
 | `LLM_SKIP` | `false` | Disable LLM stage entirely |
 | `LLM_API_URL` | OpenAI endpoint | Any OpenAI-compatible URL |
-| `LLM_API_KEY` | — | Bearer token |
+| `LLM_API_KEY` | — | Bearer token (use `"ollama"` for local Ollama) |
 | `LLM_MODEL` | `gpt-4o-mini` | Model name |
 | `LLM_TEMPERATURE` | `0.4` | Sampling temperature |
 | `LLM_MAX_TOKENS` | `512` | Max response tokens |
-| `LLM_TIMEOUT_SECONDS` | `30` | HTTP timeout |
-
-### NVD enrichment
-
-| Variable | Default | Description |
-|---|---|---|
-| `NVD_ENRICH` | `false` | Enable NVD CVE enrichment at startup |
-| `NVD_API_KEY` | — | NVD API key (higher rate limit) |
-| `NVD_CACHE_PATH` | `data/nvd_cache.json` | NVD response cache file |
-
-### MITRE ATT&CK
-
-| Variable | Default | Description |
-|---|---|---|
-| `ATTACK_ENABLED` | `false` | Enable ATT&CK TTP scoring |
-| `ATTACK_BUNDLE_PATH` | `data/mitre_attack_cache.json` | Local cache for STIX bundle |
-| `ATTACK_BUNDLE_URL` | GitHub mitre/cti | Source URL for the bundle |
+| `LLM_TIMEOUT_SECONDS` | `30` | HTTP timeout (use 120+ for local models) |
+| `LLM_JSON_MODE` | `true` | Send `response_format=json_object`; set `false` for Ollama models that do not support the parameter |
 
 ---
 
 ## Confidence bands
 
-Defined in `pipeline/constants.py` and used by both the tagger and the report:
+Defined in `pipeline/constants.py` and used by both the tagger and the report. The module also exports `SKIP_TECH_VALUES` — a frozenset of low-signal strings (e.g. `"n/a"`, `"hybrid"`, `"production"`) that are filtered out of profile terms before scoring to prevent false-positive matches.
 
 | Band | Range | MISP tag |
 |---|---|---|
@@ -490,6 +467,8 @@ pytest tests/ -v
 Key test files:
 - `test_scoring_integration.py` — end-to-end scoring with a synthetic event
 - `test_ner_matching.py` — NER term matching behaviour
+- `test_ner_regex.py` — NER regex pattern correctness
+- `test_ner_spacy.py` — spaCy NER extraction behaviour
 - `test_ner_profile_assets.py` — profile/SBOM asset loading
 - `test_text_builder.py` — event-to-text conversion
 - `test_runner_fault_mode.py` — pipeline fault isolation behaviour

@@ -13,6 +13,7 @@ load_dotenv(override=True)
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+logging.getLogger("pymisp").setLevel(logging.CRITICAL)
 
 from pymisp import PyMISP
 

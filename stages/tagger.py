@@ -14,6 +14,13 @@ logger = logging.getLogger(__name__)
 
 TAG_NAMESPACE = "curation"
 
+_CURATION_TAGS = [
+    "curation:relevance=high",
+    "curation:relevance=medium",
+    "curation:relevance=low",
+    "curation:relevance=not-relevant",
+]
+
 
 def get_relevance_tag(confidence: float) -> str:
     if confidence >= BAND_HIGH:
@@ -36,16 +43,16 @@ class MISPTaggerStage(Stage):
         return "tagger"
 
     def __init__(self, client: PyMISP, dry_run: bool = True) -> None:
-        self.client   = client
-        self.dry_run  = dry_run
+        self.client  = client
+        self.dry_run = dry_run
         self._setup_tags()
 
     def _setup_tags(self) -> None:
         required_tags = {
-            "curation:relevance=high":         "#1a7a3e",
-            "curation:relevance=medium":       "#856404",
-            "curation:relevance=low":          "#721c24",
-            "curation:relevance=not-relevant": "#6c757d",
+            "curation:relevance=high":         "#721c24",  # red
+            "curation:relevance=medium":       "#856404",  # amber
+            "curation:relevance=low":          "#1a7a3e",  # green
+            "curation:relevance=not-relevant": "#6c757d",  # grey
             "tlp:white":                       "#ffffff",
             "feed:curated":                    "#0d6efd",
         }
@@ -69,7 +76,7 @@ class MISPTaggerStage(Stage):
             logger.warning("Event %s has no confidence score, skipping tagger", event.misp_id)
             return event
 
-        tag         = get_relevance_tag(event.confidence)
+        tag        = get_relevance_tag(event.confidence)
         is_relevant = tag != "curation:relevance=not-relevant"
 
         if self.dry_run:
@@ -88,11 +95,10 @@ class MISPTaggerStage(Stage):
             return event
 
         try:
-            uuid = event.misp_uuid
-            # Fetch once — shared by tag removal and attribute upserts
+            uuid       = event.misp_uuid
             misp_event = self.client.get_event(uuid, pythonify=True)
 
-            self._remove_old_curation_tags(misp_event)
+            self._remove_old_curation_tags(uuid)
             self.client.tag(uuid, tag)
             if is_relevant:
                 self.client.tag(uuid, "tlp:white")
@@ -101,20 +107,20 @@ class MISPTaggerStage(Stage):
             self._upsert_score_attribute(misp_event, uuid, event)
             self._upsert_analyst_summary_attribute(misp_event, uuid, event)
 
-            logger.debug("Tagged event %s → %s (confidence=%.4f)", event.misp_id, tag, event.confidence)
+            logger.info("Tagged event %s → %s (confidence=%.4f)", event.misp_id, tag, event.confidence)
         except Exception as exc:
             logger.error("Failed to tag event %s: %s", event.misp_id, exc)
 
         return event
 
-    def _remove_old_curation_tags(self, misp_event: MISPEvent) -> None:
-        for tag in misp_event.tags:
-            if tag.name.startswith("curation:"):
-                try:
-                    self.client.untag(misp_event.id, tag.name)
-                    logger.debug("Removed old tag '%s' from event %s", tag.name, misp_event.uuid)
-                except Exception as exc:
-                    logger.error("Failed to remove tag '%s' from event %s: %s", tag.name, misp_event.uuid, exc)
+    def _remove_old_curation_tags(self, uuid: str) -> None:
+        """Brute-force remove all curation tags by UUID — avoids stale event object issues."""
+        for tag_name in _CURATION_TAGS:
+            try:
+                self.client.untag(uuid, tag_name)
+                logger.debug("Removed tag '%s' from event %s", tag_name, uuid)
+            except Exception:
+                pass  # tag wasn't present, that's fine
 
     def _upsert_score_attribute(self, misp_event: MISPEvent, uuid: str, event: CurationEvent) -> None:
         breakdown   = event.score_breakdown

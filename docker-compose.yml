@@ -1,0 +1,11 @@
+services:
+  pipeline:
+    build: .
+    env_file: .env
+    volumes:
+      - ./Assets:/app/Assets:ro
+      - ./reports:/app/reports
+      - pipeline_data:/app/data
+
+volumes:
+  pipeline_data:

@@ -17,9 +17,9 @@ An automated cyber threat intelligence (CTI) curation pipeline that connects to 
 
 ## Requirements
 
-- Python 3.10+
+- Docker and Docker Compose
 - A running MISP instance with API access
-- (Optional) An OpenAI-compatible LLM endpoint for analyst summaries
+- (Optional) An OpenAI-compatible LLM endpoint for analyst summaries, or [Ollama](https://ollama.com) for local inference
 
 ---
 
@@ -28,7 +28,6 @@ An automated cyber threat intelligence (CTI) curation pipeline that connects to 
 ```bash
 git clone https://github.com/bedry002/CtiProject2026.git
 cd CtiProject2026
-pip install -r requirements.txt
 ```
 
 ---
@@ -45,7 +44,7 @@ Open `.env` and fill in at minimum:
 
 ```env
 MISP_URL=https://your-misp-instance
-MISP_KEY=your_misp_automation_key
+MISP_API_KEY=your_misp_automation_key
 
 # Your organisation profile and SBOM
 ORG_PROFILE_PATH=Assets/your_profile.json
@@ -56,17 +55,22 @@ ORG_SBOM_PATH=Assets/your_sbom.json
 
 Create a JSON file describing your organisation (see [Profile format](#profile-format) below). Several example profiles are included in `Assets/`.
 
-### 3. Run
+### 3. Build the image
 
 ```bash
-# One-shot mode — process events from the last 24 hours and exit
-POLL_RUN_ONCE=true python main.py
-
-# Continuous mode — poll every 30 seconds
-python main.py
+docker compose build pipeline
 ```
 
-The HTML report is written to `reports/curation_report.html` after each run.
+This installs all Python dependencies and downloads the spaCy `en_core_web_lg` model — only needed once, or after code changes.
+
+### 4. Run
+
+```bash
+# One-shot mode — set POLL_RUN_ONCE=true in .env, then:
+docker compose run --rm pipeline
+```
+
+The HTML report is written to `reports/curation_report.html` on the host after each run.
 
 ---
 
@@ -109,7 +113,7 @@ The org profile tells the engine what your organisation looks like so it can jud
 | `geographies` | Regions of operation |
 | `keywords` | High-signal threat phrases — even a single match scores well |
 | `threat_actors` | Tracked adversaries flagged by NER |
-| `cpe_list` | CPE identifiers injected as synthetic SBOM components for scoring |
+| `cpe_list` | CPE identifiers for NVD CVE enrichment and SBOM injection |
 
 ---
 
@@ -152,14 +156,13 @@ Component criticality (`high`, `medium`, `low`) controls how much weight a match
 
 ## Scoring explained
 
-Each event receives a confidence score between 0 and 1, computed from four weighted dimensions:
+Each event receives a confidence score between 0 and 1, computed from three weighted dimensions:
 
 | Dimension | Default weight | What it measures |
 |---|---|---|
-| Asset | 30% | SBOM component mentions + keyword hits |
-| Technology | 30% | Technology terms from your profile appearing in the event |
-| Sector | 30% | Sector terms from your profile appearing in the event |
-| Geography | 10% | Geography terms from your profile appearing in the event |
+| Stack | 50% | SBOM component mentions + keyword hits + technology matches |
+| Sector | 25% | How many of your sector terms appear in the event |
+| TTP | 25% | ATT&CK techniques in the event that target your platform set |
 
 Events are then banded:
 
@@ -170,7 +173,7 @@ Events are then banded:
 | Low | 0.10 – 0.25 | `curation:relevance=low` |
 | Not relevant | < threshold | dropped / `curation:relevance=not-relevant` |
 
-The default drop threshold is `0.20`. Adjust with `CONFIDENCE_THRESHOLD` in `.env`.
+The default drop threshold is `0.20`. Adjust with `CONFIDENCE_THRESHOLD` in `.env`. Set to `0.0` to tag every event including not-relevant ones rather than dropping them.
 
 ---
 
@@ -182,7 +185,7 @@ All settings are read from `.env`. A full template with descriptions is in `.env
 
 ```env
 MISP_URL=https://your-misp-instance
-MISP_KEY=your_api_key
+MISP_API_KEY=your_api_key
 ORG_PROFILE_PATH=Assets/your_profile.json
 ORG_SBOM_PATH=Assets/your_sbom.json
 ```
@@ -193,6 +196,8 @@ ORG_SBOM_PATH=Assets/your_sbom.json
 CONFIDENCE_THRESHOLD=0.20      # Drop events below this score
 POLL_LOOKBACK_HOURS=24         # How far back the first run looks
 POLL_INTERVAL_SECONDS=30       # Seconds between polls
+POLL_RUN_ONCE=true             # Process one batch and exit
+POLL_RESET_STATE=false         # Set true to ignore saved timestamp and start fresh
 TAGGER_DRY_RUN=true            # Set false to actually write tags to MISP
 LLM_SKIP=true                  # Set false to enable LLM analyst summaries
 ```
@@ -208,106 +213,117 @@ LLM_API_KEY=sk-...
 LLM_MODEL=gpt-4o-mini
 ```
 
-For Groq:
+For Groq (recommended for speed — no local resources required):
 ```env
 LLM_API_URL=https://api.groq.com/openai/v1/chat/completions
+LLM_API_KEY=your_groq_api_key
 LLM_MODEL=llama-3.3-70b-versatile
+LLM_JSON_MODE=true
+LLM_TIMEOUT_SECONDS=30
 ```
 
-For local Ollama:
+For local Ollama (install separately on host — see [ollama.com](https://ollama.com)):
 ```env
-LLM_API_URL=http://localhost:11434/v1/chat/completions
+LLM_API_URL=http://host.docker.internal:11434/v1/chat/completions
 LLM_API_KEY=ollama
-LLM_MODEL=llama3.1:8b
-LLM_JSON_MODE=false        # set true only if your Ollama build supports json_object mode
-LLM_TIMEOUT_SECONDS=120    # local models are slower
+LLM_MODEL=llama3.2:1b
+LLM_JSON_MODE=false
+LLM_TIMEOUT_SECONDS=300
+```
+
+> **Linux hosts:** `host.docker.internal` requires `extra_hosts: ["host.docker.internal:host-gateway"]` in `docker-compose.yml` (already included), and Ollama must be configured with `OLLAMA_HOST=0.0.0.0` to accept connections from the container.
+
+### NVD CVE enrichment (optional)
+
+Enriches SBOM components with CVEs from the NVD API at startup.
+
+```env
+NVD_ENRICH=true
+NVD_API_KEY=your_nvd_key       # Get a free key at nvd.nist.gov for higher rate limits
+```
+
+> **Note:** CPEs in the SBOM must use pinned version numbers (e.g. `1.24.0`) not wildcards (`1.24.*`) for the NVD API to accept them.
+
+### MITRE ATT&CK TTP scoring (optional)
+
+```env
+ATTACK_ENABLED=true
+# Bundle downloaded once (~50 MB) and cached at ATTACK_BUNDLE_PATH
 ```
 
 ---
 
-## Integrating into your system
+## Running via Docker
 
-### As a long-running service
-
-Run `main.py` as a process and manage it with systemd, Docker, or a process supervisor.
-
-**systemd unit example:**
-
-```ini
-[Unit]
-Description=CTI Curation Engine
-After=network.target
-
-[Service]
-WorkingDirectory=/opt/CtiProject2026
-ExecStart=/opt/venv/bin/python main.py
-EnvironmentFile=/opt/CtiProject2026/.env
-Restart=on-failure
-RestartSec=15
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### As a Docker container
-
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-CMD ["python", "main.py"]
-```
+### Build
 
 ```bash
-docker build -t cti-engine .
-docker run -d \
-  --env-file .env \
-  -v $(pwd)/reports:/app/reports \
-  -v $(pwd)/data:/app/data \
-  cti-engine
+docker compose build pipeline
 ```
 
-### As a one-shot batch job (cron)
+Rebuild whenever `requirements.txt` or the codebase changes.
+
+### One-shot run
 
 ```bash
-# Set POLL_RUN_ONCE=true in .env and POLL_RESET_STATE=false to continue from last run
-0 * * * * cd /opt/CtiProject2026 && /opt/venv/bin/python main.py >> /var/log/cti-engine.log 2>&1
+docker compose run --rm pipeline
 ```
 
-### Importing the pipeline in your own code
+`--rm` removes the container after it exits — only the named volume (`pipeline_data`, holding poll state) persists between runs.
 
-```python
-from dotenv import load_dotenv
-load_dotenv()
+### Override environment variables for a single run
 
-from config import BUSINESS_PROFILE, SBOM_PROFILE, CONFIDENCE_THRESHOLD
-from pipeline.runner import Pipeline
-from stages.ingest import MISPIngestStage
-from stages.ner import NERStage
-from stages.scoring import ScoringStage
-from stages.report import ReportStage
-import pathlib, time
-
-pipeline = Pipeline([
-    NERStage(),
-    ScoringStage(
-        BUSINESS_PROFILE, SBOM_PROFILE,
-        threshold=CONFIDENCE_THRESHOLD,
-    ),
-    ReportStage(pathlib.Path("reports/report.html"), threshold=CONFIDENCE_THRESHOLD),
-])
-
-ingest = MISPIngestStage("https://your-misp", "your-key", False)
-events = ingest.fetch(since_timestamp=int(time.time()) - 86400)
-results = pipeline.run(events)
-
-for event in results:
-    print(event.misp_id, event.confidence, event.score_breakdown)
+```bash
+docker compose run --rm -e POLL_RESET_STATE=true -e CONFIDENCE_THRESHOLD=0.0 pipeline
 ```
 
-### Adding a custom stage
+### Viewing the report
+
+The report is written to `./reports/curation_report.html` on the host via a bind mount.
+
+```bash
+# Windows
+start reports\curation_report.html
+
+# Linux desktop
+xdg-open reports/curation_report.html
+
+# Linux headless server — serve it temporarily
+cd reports && python3 -m http.server 8080
+# then browse to http://<server-ip>:8080/curation_report.html
+```
+
+### Scheduling weekly runs (cron)
+
+```bash
+crontab -e
+```
+
+```
+0 8 * * 1 cd /path/to/CtiProject2026 && docker compose run --rm pipeline >> cron.log 2>&1
+```
+
+Ensure `POLL_RESET_STATE=false` in `.env` so each run only processes events since the last poll.
+
+---
+
+## What gets written to MISP
+
+When `TAGGER_DRY_RUN=false`, the engine writes:
+
+| What | Where in MISP |
+|---|---|
+| Relevance tag | Event tag: `curation:relevance=high/medium/low/not-relevant` |
+| TLP tag | Event tag: `tlp:white` (relevant events only) |
+| Feed tag | Event tag: `feed:curated` (relevant events only) |
+| Score breakdown | Event attribute (type: text, category: External analysis) |
+| Analyst summary | Event attribute (type: text, category: External analysis) |
+
+The engine cleans up old `curation:` tags before writing new ones, so re-running is safe.
+
+---
+
+## Adding a custom stage
 
 ```python
 from pipeline.base import Stage
@@ -325,30 +341,10 @@ class SlackNotifierStage(Stage):
         return event
 ```
 
-Register it in `main.py:build_pipeline()` after the scoring stage.
-
----
-
-## What gets written to MISP
-
-When `TAGGER_DRY_RUN=false`, the engine writes:
-
-| What | Where in MISP |
-|---|---|
-| Relevance tag | Event tag: `curation:relevance=high/medium/low` |
-| TLP tag | Event tag: `tlp:white` |
-| Feed tag | Event tag: `feed:curated` |
-| Score breakdown | Event attribute (type: text, category: External analysis) |
-| Analyst summary | Event attribute (type: text, category: External analysis) |
-
-The engine cleans up old `curation:` tags before writing new ones, so re-running is safe.
-
----
-
-## Running tests
+Register it in `main.py:build_pipeline()` after the scoring stage, then rebuild:
 
 ```bash
-pytest tests/ -v
+docker compose build pipeline
 ```
 
 ---
@@ -358,16 +354,22 @@ pytest tests/ -v
 **No events surfacing (score 0.0 for everything)**
 - Check your profile has meaningful `sectors`, `technologies`, and `keywords`. Empty arrays score nothing.
 - Look at what events are actually in your MISP feed — IDS/network observation events with only IP addresses will never match a profile.
-- Run with `POLL_LOOKBACK_HOURS=500` to cast a wider net and see if older events score better.
+- Run with `-e POLL_LOOKBACK_HOURS=500 -e POLL_RESET_STATE=true` to cast a wider net and see if older events score better.
 
 **Events scoring lower than expected**
-- Check your SBOM component terms — very generic names like `server` are excluded to prevent false positives.
-- Broaden `keywords` in your profile; keyword hits feed the `asset` dimension and even a single match contributes meaningfully.
-- Check that `technologies`, `sectors`, and `geographies` in your profile match terms that actually appear in event text.
+- The `ttp` dimension (25% weight) is 0 unless `ATTACK_ENABLED=true`.
+- Check your SBOM component terms — very generic component names like `server` are excluded to prevent false positives.
+- Broaden `keywords` in your profile to cover common threat categories relevant to your sector.
 
-**spaCy model not found**
-- Set `SPACY_AUTO_DOWNLOAD=true` in `.env` and the model will be downloaded on first run.
-- Or install manually: `python -m spacy download en_core_web_lg`
+**NVD warnings at startup**
+- CPEs with wildcard versions (`1.24.*`) are rejected by the NVD API. Use pinned versions in your SBOM/profile CPEs.
+
+**LLM connection refused / timed out**
+- Ollama: confirm it's running (`ollama list`) and bound to `0.0.0.0` not just `127.0.0.1`.
+- Local CPU inference can take 1-5 minutes per event — increase `LLM_TIMEOUT_SECONDS` or switch to Groq for faster, resource-free inference.
+
+**MISP authentication failed (403)**
+- Generate a fresh API key in MISP under **Administration → List Users → your user → Auth keys**.
 
 **MISP tags not being written**
 - `TAGGER_DRY_RUN` defaults to `true`. Set it to `false` in `.env` to write tags.
@@ -379,13 +381,13 @@ pytest tests/ -v
 ```
 main.py          Polling loop entry point
 config.py        Loads .env, profile, SBOM — all config in one place
-evaluate.py      Offline scoring evaluation (assert-synthetic, sweep, kappa)
 pipeline/        Framework: Stage base class, Pipeline runner, event model, helpers
 stages/          One file per pipeline stage
 Assets/          Org profiles and SBOMs — swap to change target organisation
 data/            Runtime state (gitignored)
 reports/         HTML output (gitignored)
-tests/           Pytest test suite
+Dockerfile       Container build definition
+docker-compose.yml  Service definition and volume mounts
 ```
 
 For a full module-by-module breakdown, see [CODEBASE_GUIDE.md](CODEBASE_GUIDE.md).

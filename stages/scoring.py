@@ -26,6 +26,13 @@ _ASSET_SATURATION = os.getenv("SCORING_ASSET_SATURATION", "false").strip().lower
 # 1.0 == one high-criticality component (weight 1.0), or ~two medium (0.6) components.
 _ASSET_SAT_CAP = float(os.getenv("SCORING_ASSET_SAT_CAP", "1.0"))
 
+# When an event CVE matches a documented risk affecting a component in the org's
+# SBOM, that is a near-certain relevance signal: a known-exploitable flaw on kit
+# the organisation actually runs. In the weighted average that signal is diluted
+# by total SBOM weight, so genuinely critical CVE hits scored below the drop
+# threshold in evaluation. This floor guarantees a confirmed CVE-to-SBOM match
+# lands at least in this band, independent of the other dimensions.
+_CVE_MATCH_FLOOR = float(os.getenv("SCORING_CVE_MATCH_FLOOR", "0.50"))
 
 def _normalise_asset(matched_weight: float, total_weight: float) -> float:
     """Convert matched component weight into a [0, 1] asset sub-score.
@@ -274,6 +281,14 @@ class ScoringStage(Stage):
             4,
         )
 
+        # CVE-match floor: a confirmed event-CVE-to-SBOM-risk match is a
+        # near-certain relevance signal that the weighted average dilutes.
+        # Guarantee it clears the band, without disturbing the weight maths.
+        cve_floor_applied = False
+        if cve_refs and _CVE_MATCH_FLOOR > 0.0 and confidence < _CVE_MATCH_FLOOR:
+            confidence = _CVE_MATCH_FLOOR
+            cve_floor_applied = True
+
         event.confidence              = confidence
         event.matched_sbom_components = sbom_refs
         event.matched_profile_terms   = kw_matched + tech_matched + sector_matched + geo_matched
@@ -284,6 +299,7 @@ class ScoringStage(Stage):
             "tech":      round(tech_s,   4),
             "sector":    round(sector_s, 4),
             "geography": round(geo_s,    4),
+            "cve_floor_applied": 1.0 if cve_floor_applied else 0.0,
         }
         logger.debug(
             "Event %s → %.4f  asset=%.3f tech=%.3f sector=%.3f geo=%.3f",

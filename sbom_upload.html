@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SBOM Upload — CTI Curation Engine</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0f12; --surface: #13161b; --surface2: #1a1e25; --border: #252930;
+      --accent: #00e5a0; --accent-dim: rgba(0,229,160,0.08); --accent-mid: rgba(0,229,160,0.2);
+      --text: #e2e4e8; --muted: #6b7280; --danger: #ff4d6d; --warning: #f59e0b;
+      --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+    .shell { max-width: 720px; margin: 0 auto; padding: 48px 24px 96px; }
+    h1 { font-family: var(--mono); font-size: 22px; font-weight: 500; color: var(--accent); margin-bottom: 8px; }
+    .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+    .card h3 { font-family: var(--mono); font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+
+    .stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: var(--muted); }
+    .stat-value { font-family: var(--mono); color: var(--text); }
+    .stat-value.accent { color: var(--accent); }
+    .stat-value.warning { color: var(--warning); }
+
+    .source-list { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+    .source-tag { display: inline-block; font-family: var(--mono); font-size: 11px; padding: 2px 8px; border-radius: 3px; background: var(--accent-dim); color: var(--accent); margin: 2px 4px 2px 0; }
+
+    .upload-area { background: var(--surface); border: 2px dashed var(--border); border-radius: 8px; padding: 48px 24px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; margin-bottom: 16px; }
+    .upload-area:hover, .upload-area.dragover { border-color: var(--accent); background: var(--accent-dim); }
+    .upload-area .icon { font-size: 36px; margin-bottom: 12px; }
+    .upload-area .label { font-size: 15px; color: var(--text); margin-bottom: 4px; }
+    .upload-area .hint { font-size: 12px; color: var(--muted); }
+    input[type="file"] { display: none; }
+
+    .file-list { margin-bottom: 16px; }
+    .file-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--surface2); border-radius: 4px; margin-bottom: 4px; font-size: 13px; }
+    .file-item .name { font-family: var(--mono); color: var(--accent); }
+    .file-item .size { color: var(--muted); font-size: 12px; }
+    .file-item .remove { color: var(--danger); cursor: pointer; font-size: 12px; border: none; background: none; }
+
+    .btn-row { display: flex; gap: 12px; margin-bottom: 24px; }
+    .btn { display: inline-block; padding: 10px 28px; font-family: var(--mono); font-size: 13px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; transition: opacity 0.2s; }
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: var(--bg); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-outline { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+    .result-card { display: none; }
+    .result-card.visible { display: block; }
+    .result-card.accepted { border-color: var(--accent); }
+    .result-card.rejected { border-color: var(--danger); }
+    .result-header { font-family: var(--mono); font-size: 14px; font-weight: 500; margin-bottom: 12px; }
+    .result-header.ok { color: var(--accent); }
+    .result-header.fail { color: var(--danger); }
+
+    .issue { font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .issue:last-child { border-bottom: none; }
+    .badge { font-family: var(--mono); font-size: 11px; padding: 2px 6px; border-radius: 3px; margin-right: 8px; text-transform: uppercase; }
+    .badge.error { background: rgba(255,77,109,0.15); color: var(--danger); }
+    .badge.warning { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .badge.info { background: rgba(0,229,160,0.1); color: var(--accent); }
+
+    .guide { margin-top: 32px; }
+    .guide pre { background: var(--surface2); border-radius: 4px; padding: 12px 16px; font-family: var(--mono); font-size: 12px; overflow-x: auto; color: var(--text); line-height: 1.5; }
+    .guide p { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+
+    .nav-link { display: inline-block; margin-top: 24px; font-family: var(--mono); font-size: 13px; color: var(--accent); text-decoration: none; }
+    .nav-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h1>// sbom_upload</h1>
+    <p class="subtitle">Upload your organisation's CycloneDX SBOM(s). Multiple files are merged automatically — duplicates removed, criticality assigned.</p>
+
+    <!-- Current SBOM summary -->
+    <div class="card" id="current-summary">
+      <h3>Currently loaded SBOM</h3>
+      <div id="summary-content"><p style="color: var(--muted); font-size: 13px;">Loading...</p></div>
+    </div>
+
+    <!-- Upload area -->
+    <div class="upload-area" id="drop-zone">
+      <div class="icon">&#128196;</div>
+      <div class="label">Drop CycloneDX JSON file(s) here</div>
+      <div class="hint">or click to browse — multiple files supported</div>
+    </div>
+    <input type="file" id="file-input" accept=".json" multiple>
+
+    <!-- Selected files list -->
+    <div class="file-list" id="file-list"></div>
+
+    <!-- Buttons -->
+    <div class="btn-row">
+      <button class="btn btn-primary" id="upload-btn" disabled>Upload & Merge</button>
+      <button class="btn btn-danger" id="clear-btn">Clear SBOM</button>
+    </div>
+
+    <!-- Result -->
+    <div class="card result-card" id="result-card">
+      <div class="result-header" id="result-header"></div>
+      <div id="result-message" style="font-size: 13px; margin-bottom: 12px; color: var(--muted);"></div>
+      <div id="result-issues"></div>
+    </div>
+
+    <!-- Format guide -->
+    <div class="card guide">
+      <h3>Expected format</h3>
+      <p>CycloneDX 1.4+ JSON. Each component should include a CPE identifier and criticality property for best scoring accuracy. Components without criticality get one assigned automatically based on type.</p>
+      <pre>{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "components": [
+    {
+      "type": "application",
+      "name": "FortiGate Firewall",
+      "version": "7.4.3",
+      "cpe": "cpe:2.3:o:fortinet:fortios:7.4.3:*:*:*:*:*:*:*",
+      "supplier": { "name": "Fortinet" },
+      "properties": [
+        { "name": "criticality", "value": "high" }
+      ]
+    }
+  ]
+}</pre>
+      <p style="margin-top: 12px;">Generate with: <code style="color: var(--accent);">syft &lt;image&gt; -o cyclonedx-json</code></p>
+    </div>
+
+    <a class="nav-link" href="/">&#8592; Back to business profile</a>
+  </div>
+
+  <script>
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const uploadBtn = document.getElementById('upload-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const fileListEl = document.getElementById('file-list');
+    const resultCard = document.getElementById('result-card');
+    let selectedFiles = [];
+
+    async function loadSummary() {
+      try {
+        const res = await fetch('/api/sbom/current');
+        const data = await res.json();
+        const el = document.getElementById('summary-content');
+        if (data.status === 'empty') {
+          el.innerHTML = '<p style="color: var(--warning); font-size: 13px;">No SBOM loaded — upload one or more files below.</p>';
+        } else if (data.status === 'loaded') {
+          let html = `
+            <div class="stat-row"><span class="stat-label">Total components</span><span class="stat-value accent">${data.total_components}</span></div>
+            <div class="stat-row"><span class="stat-label">With CPE</span><span class="stat-value">${data.with_cpe}</span></div>
+            <div class="stat-row"><span class="stat-label">Without CPE</span><span class="stat-value warning">${data.without_cpe}</span></div>
+            <div class="stat-row"><span class="stat-label">Vulnerabilities tracked</span><span class="stat-value">${data.vulnerabilities}</span></div>
+            <div class="stat-row"><span class="stat-label">High criticality</span><span class="stat-value">${data.criticality.high || 0}</span></div>
+            <div class="stat-row"><span class="stat-label">Medium criticality</span><span class="stat-value">${data.criticality.medium || 0}</span></div>
+            <div class="stat-row"><span class="stat-label">Low criticality</span><span class="stat-value">${data.criticality.low || 0}</span></div>`;
+          if (data.source_files && data.source_files.length > 0) {
+            html += '<div class="source-list"><span class="stat-label" style="display:block;margin-bottom:6px;">Merged from:</span>';
+            data.source_files.forEach(f => { html += `<span class="source-tag">${f}</span>`; });
+            html += '</div>';
+          }
+          el.innerHTML = html;
+        } else {
+          el.innerHTML = `<p style="color: var(--danger); font-size: 13px;">Error: ${data.detail}</p>`;
+        }
+      } catch (e) {
+        document.getElementById('summary-content').innerHTML = '<p style="color: var(--muted); font-size: 13px;">Could not load summary.</p>';
+      }
+    }
+
+    // Drag and drop
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      addFiles(Array.from(e.dataTransfer.files));
+    });
+    fileInput.addEventListener('change', () => { addFiles(Array.from(fileInput.files)); fileInput.value = ''; });
+
+    function addFiles(newFiles) {
+      newFiles.forEach(f => {
+        if (f.name.endsWith('.json') && !selectedFiles.some(s => s.name === f.name)) {
+          selectedFiles.push(f);
+        }
+      });
+      renderFileList();
+    }
+
+    function removeFile(idx) {
+      selectedFiles.splice(idx, 1);
+      renderFileList();
+    }
+
+    function renderFileList() {
+      fileListEl.innerHTML = '';
+      selectedFiles.forEach((f, i) => {
+        const div = document.createElement('div');
+        div.className = 'file-item';
+        div.innerHTML = `<span class="name">${f.name}</span><span class="size">${(f.size/1024).toFixed(1)} KB</span><button class="remove" onclick="removeFile(${i})">remove</button>`;
+        fileListEl.appendChild(div);
+      });
+      uploadBtn.disabled = selectedFiles.length === 0;
+      resultCard.classList.remove('visible');
+    }
+
+    // Upload
+    uploadBtn.addEventListener('click', async () => {
+      if (!selectedFiles.length) return;
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = 'Uploading & merging...';
+
+      const formData = new FormData();
+      selectedFiles.forEach(f => formData.append('files', f));
+
+      try {
+        const res = await fetch('/api/sbom/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        const header = document.getElementById('result-header');
+        const message = document.getElementById('result-message');
+        const issuesEl = document.getElementById('result-issues');
+
+        resultCard.classList.remove('accepted', 'rejected');
+
+        if (data.status === 'accepted') {
+          resultCard.classList.add('accepted');
+          header.className = 'result-header ok';
+          header.textContent = 'SBOM merged successfully';
+          message.textContent = data.message;
+        } else {
+          resultCard.classList.add('rejected');
+          header.className = 'result-header fail';
+          header.textContent = 'Upload rejected';
+          message.textContent = data.message;
+        }
+
+        issuesEl.innerHTML = '';
+        if (data.issues && data.issues.length) {
+          data.issues.forEach(issue => {
+            const div = document.createElement('div');
+            div.className = 'issue';
+            div.innerHTML = `<span class="badge ${issue.severity}">${issue.severity}</span>${issue.message}`;
+            issuesEl.appendChild(div);
+          });
+        }
+
+        resultCard.classList.add('visible');
+        selectedFiles = [];
+        renderFileList();
+        loadSummary();
+      } catch (e) {
+        alert('Upload failed: ' + e.message);
+      }
+
+      uploadBtn.textContent = 'Upload & Merge';
+      uploadBtn.disabled = true;
+    });
+
+    // Clear
+    clearBtn.addEventListener('click', async () => {
+      if (!confirm('Clear the current SBOM? This removes all uploaded components.')) return;
+      try {
+        const res = await fetch('/api/sbom/clear', { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'ok') {
+          resultCard.classList.remove('visible');
+          loadSummary();
+        }
+      } catch (e) {
+        alert('Clear failed: ' + e.message);
+      }
+    });
+
+    loadSummary();
+  </script>
+</body>
+</html>

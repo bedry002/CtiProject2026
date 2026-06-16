@@ -1,11 +1,21 @@
 services:
+  api:
+    build: .
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Assets:/app/Assets:rw
+    command: uvicorn form_api:app --host 0.0.0.0 --port 8000
+
   pipeline:
     build: .
     env_file: .env
     volumes:
-      - ./Assets:/app/Assets:ro
+      - ./Assets:/app/Assets:rw
       - ./reports:/app/reports
       - pipeline_data:/app/data
+    command: python main.py
 
 volumes:
   pipeline_data:

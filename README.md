@@ -45,32 +45,39 @@ Open `.env` and fill in at minimum:
 ```env
 MISP_URL=https://your-misp-instance
 MISP_API_KEY=your_misp_automation_key
-
-# Your organisation profile and SBOM
 ORG_PROFILE_PATH=Assets/your_profile.json
 ORG_SBOM_PATH=Assets/your_sbom.json
 ```
 
-### 2. Create your organisation profile
+### 2. Install cloudflared (first time only)
 
-Create a JSON file describing your organisation (see [Profile format](#profile-format) below). Several example profiles are included in `Assets/`.
-
-### 3. Build the image
-
+**Linux:**
 ```bash
-docker compose build pipeline
+wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+sudo dpkg -i cloudflared-linux-amd64.deb
 ```
 
-This installs all Python dependencies and downloads the spaCy `en_core_web_lg` model — only needed once, or after code changes.
-
-### 4. Run
-
-```bash
-# One-shot mode — set POLL_RUN_ONCE=true in .env, then:
-docker compose run --rm pipeline
+**Windows:**
+```powershell
+winget install Cloudflare.cloudflared
 ```
 
-The HTML report is written to `reports/curation_report.html` on the host after each run.
+### 3. Start the form and tunnel
+
+```bash
+chmod +x start.sh run_pipeline.sh
+./start.sh
+```
+
+This builds the image, starts the profile form API, and opens a public Cloudflare tunnel. The tunnel URL is printed in the terminal — share it to access the form.
+
+### 4. Run the pipeline
+
+```bash
+./run_pipeline.sh
+```
+
+Run this whenever you want to process new MISP events. The HTML report is written to `reports/curation_report.html` after each run.
 
 ---
 
@@ -193,18 +200,16 @@ ORG_SBOM_PATH=Assets/your_sbom.json
 ### Tuning
 
 ```env
-CONFIDENCE_THRESHOLD=0.20      # Drop events below this score
-POLL_LOOKBACK_HOURS=24         # How far back the first run looks
-POLL_INTERVAL_SECONDS=30       # Seconds between polls
-POLL_RUN_ONCE=true             # Process one batch and exit
-POLL_RESET_STATE=false         # Set true to ignore saved timestamp and start fresh
-TAGGER_DRY_RUN=true            # Set false to actually write tags to MISP
-LLM_SKIP=true                  # Set false to enable LLM analyst summaries
+CONFIDENCE_THRESHOLD=0.20
+POLL_LOOKBACK_HOURS=24
+POLL_INTERVAL_SECONDS=30
+POLL_RUN_ONCE=true
+POLL_RESET_STATE=false
+TAGGER_DRY_RUN=true
+LLM_SKIP=true
 ```
 
 ### LLM enrichment (optional)
-
-The LLM stage works with any OpenAI-compatible endpoint — OpenAI, Groq, Ollama, Azure OpenAI, etc.
 
 ```env
 LLM_SKIP=false
@@ -213,7 +218,7 @@ LLM_API_KEY=sk-...
 LLM_MODEL=gpt-4o-mini
 ```
 
-For Groq (recommended for speed — no local resources required):
+For Groq:
 ```env
 LLM_API_URL=https://api.groq.com/openai/v1/chat/completions
 LLM_API_KEY=your_groq_api_key
@@ -222,7 +227,7 @@ LLM_JSON_MODE=true
 LLM_TIMEOUT_SECONDS=30
 ```
 
-For local Ollama (install separately on host — see [ollama.com](https://ollama.com)):
+For local Ollama:
 ```env
 LLM_API_URL=http://host.docker.internal:11434/v1/chat/completions
 LLM_API_KEY=ollama
@@ -231,24 +236,19 @@ LLM_JSON_MODE=false
 LLM_TIMEOUT_SECONDS=300
 ```
 
-> **Linux hosts:** `host.docker.internal` requires `extra_hosts: ["host.docker.internal:host-gateway"]` in `docker-compose.yml` (already included), and Ollama must be configured with `OLLAMA_HOST=0.0.0.0` to accept connections from the container.
+> **Linux hosts:** `host.docker.internal` requires `extra_hosts: ["host.docker.internal:host-gateway"]` in `docker-compose.yml` (already included), and Ollama must be configured with `OLLAMA_HOST=0.0.0.0`.
 
 ### NVD CVE enrichment (optional)
 
-Enriches SBOM components with CVEs from the NVD API at startup.
-
 ```env
 NVD_ENRICH=true
-NVD_API_KEY=your_nvd_key       # Get a free key at nvd.nist.gov for higher rate limits
+NVD_API_KEY=your_nvd_key
 ```
-
-> **Note:** CPEs in the SBOM must use pinned version numbers (e.g. `1.24.0`) not wildcards (`1.24.*`) for the NVD API to accept them.
 
 ### MITRE ATT&CK TTP scoring (optional)
 
 ```env
 ATTACK_ENABLED=true
-# Bundle downloaded once (~50 MB) and cached at ATTACK_BUNDLE_PATH
 ```
 
 ---
@@ -261,15 +261,11 @@ ATTACK_ENABLED=true
 docker compose build pipeline
 ```
 
-Rebuild whenever `requirements.txt` or the codebase changes.
-
 ### One-shot run
 
 ```bash
-docker compose run --rm pipeline
+./run_pipeline.sh
 ```
-
-`--rm` removes the container after it exits — only the named volume (`pipeline_data`, holding poll state) persists between runs.
 
 ### Override environment variables for a single run
 
@@ -279,18 +275,10 @@ docker compose run --rm -e POLL_RESET_STATE=true -e CONFIDENCE_THRESHOLD=0.0 pip
 
 ### Viewing the report
 
-The report is written to `./reports/curation_report.html` on the host via a bind mount.
-
 ```bash
-# Windows
-start reports\curation_report.html
-
-# Linux desktop
-xdg-open reports/curation_report.html
-
-# Linux headless server — serve it temporarily
+# Linux headless server
 cd reports && python3 -m http.server 8080
-# then browse to http://<server-ip>:8080/curation_report.html
+# browse to http://<server-ip>:8080/curation_report.html
 ```
 
 ### Scheduling weekly runs (cron)
@@ -298,96 +286,3 @@ cd reports && python3 -m http.server 8080
 ```bash
 crontab -e
 ```
-
-```
-0 8 * * 1 cd /path/to/CtiProject2026 && docker compose run --rm pipeline >> cron.log 2>&1
-```
-
-Ensure `POLL_RESET_STATE=false` in `.env` so each run only processes events since the last poll.
-
----
-
-## What gets written to MISP
-
-When `TAGGER_DRY_RUN=false`, the engine writes:
-
-| What | Where in MISP |
-|---|---|
-| Relevance tag | Event tag: `curation:relevance=high/medium/low/not-relevant` |
-| TLP tag | Event tag: `tlp:white` (relevant events only) |
-| Feed tag | Event tag: `feed:curated` (relevant events only) |
-| Score breakdown | Event attribute (type: text, category: External analysis) |
-| Analyst summary | Event attribute (type: text, category: External analysis) |
-
-The engine cleans up old `curation:` tags before writing new ones, so re-running is safe.
-
----
-
-## Adding a custom stage
-
-```python
-from pipeline.base import Stage
-from pipeline.event import CurationEvent
-
-class SlackNotifierStage(Stage):
-    @property
-    def name(self) -> str:
-        return "slack_notifier"
-
-    def process(self, event: CurationEvent) -> CurationEvent:
-        if (event.confidence or 0) >= 0.50:
-            # post to Slack
-            pass
-        return event
-```
-
-Register it in `main.py:build_pipeline()` after the scoring stage, then rebuild:
-
-```bash
-docker compose build pipeline
-```
-
----
-
-## Troubleshooting
-
-**No events surfacing (score 0.0 for everything)**
-- Check your profile has meaningful `sectors`, `technologies`, and `keywords`. Empty arrays score nothing.
-- Look at what events are actually in your MISP feed — IDS/network observation events with only IP addresses will never match a profile.
-- Run with `-e POLL_LOOKBACK_HOURS=500 -e POLL_RESET_STATE=true` to cast a wider net and see if older events score better.
-
-**Events scoring lower than expected**
-- The `ttp` dimension (25% weight) is 0 unless `ATTACK_ENABLED=true`.
-- Check your SBOM component terms — very generic component names like `server` are excluded to prevent false positives.
-- Broaden `keywords` in your profile to cover common threat categories relevant to your sector.
-
-**NVD warnings at startup**
-- CPEs with wildcard versions (`1.24.*`) are rejected by the NVD API. Use pinned versions in your SBOM/profile CPEs.
-
-**LLM connection refused / timed out**
-- Ollama: confirm it's running (`ollama list`) and bound to `0.0.0.0` not just `127.0.0.1`.
-- Local CPU inference can take 1-5 minutes per event — increase `LLM_TIMEOUT_SECONDS` or switch to Groq for faster, resource-free inference.
-
-**MISP authentication failed (403)**
-- Generate a fresh API key in MISP under **Administration → List Users → your user → Auth keys**.
-
-**MISP tags not being written**
-- `TAGGER_DRY_RUN` defaults to `true`. Set it to `false` in `.env` to write tags.
-
----
-
-## Project structure overview
-
-```
-main.py          Polling loop entry point
-config.py        Loads .env, profile, SBOM — all config in one place
-pipeline/        Framework: Stage base class, Pipeline runner, event model, helpers
-stages/          One file per pipeline stage
-Assets/          Org profiles and SBOMs — swap to change target organisation
-data/            Runtime state (gitignored)
-reports/         HTML output (gitignored)
-Dockerfile       Container build definition
-docker-compose.yml  Service definition and volume mounts
-```
-
-For a full module-by-module breakdown, see [CODEBASE_GUIDE.md](CODEBASE_GUIDE.md).

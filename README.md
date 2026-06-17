@@ -49,29 +49,16 @@ ORG_PROFILE_PATH=Assets/your_profile.json
 ORG_SBOM_PATH=Assets/your_sbom.json
 ```
 
-### 2. Install cloudflared (first time only)
-
-**Linux:**
-```bash
-wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-sudo dpkg -i cloudflared-linux-amd64.deb
-```
-
-**Windows:**
-```powershell
-winget install Cloudflare.cloudflared
-```
-
-### 3. Start the form and tunnel
+### 2. Start the form and tunnel
 
 ```bash
 chmod +x start.sh run_pipeline.sh
 ./start.sh
 ```
 
-This builds the image, starts the profile form API, and opens a public Cloudflare tunnel. The tunnel URL is printed in the terminal — share it to access the form.
+This builds the image, installs cloudflared, starts the profile form API, and opens a public Cloudflare tunnel. The tunnel URL is printed in the terminal — share it to access the form.
 
-### 4. Run the pipeline
+### 3. Run the pipeline
 
 ```bash
 ./run_pipeline.sh

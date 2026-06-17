@@ -49,14 +49,13 @@ ORG_PROFILE_PATH=Assets/your_profile.json
 ORG_SBOM_PATH=Assets/your_sbom.json
 ```
 
-### 2. Start the form and tunnel
+### 2. Build and start the form and tunnel
 
 ```bash
-chmod +x start.sh run_pipeline.sh
-./start.sh
+sudo docker compose up --build api
 ```
 
-This builds the image, installs cloudflared, starts the profile form API, and opens a public Cloudflare tunnel. The tunnel URL is printed in the terminal — share it to access the form.
+This builds the image on first run — installing all dependencies and cloudflared. Once built, the container starts automatically, launching the profile form API and opening a public Cloudflare tunnel. The tunnel URL is printed in the terminal — share it to access the form.
 
 ### 3. Run the pipeline
 
@@ -65,6 +64,8 @@ This builds the image, installs cloudflared, starts the profile form API, and op
 ```
 
 Run this whenever you want to process new MISP events. The HTML report is written to `reports/curation_report.html` after each run.
+
+> **Subsequent starts:** Once the image is built, just run `sudo docker compose up api` — no `--build` needed unless code or dependencies change.
 
 ---
 
@@ -242,13 +243,19 @@ ATTACK_ENABLED=true
 
 ## Running via Docker
 
-### Build
+### First run
 
 ```bash
-docker compose build pipeline
+sudo docker compose up --build api
 ```
 
-### One-shot run
+### Subsequent starts
+
+```bash
+sudo docker compose up api
+```
+
+### Run the pipeline
 
 ```bash
 ./run_pipeline.sh

@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
 set -e
-docker compose up --build -d api
-wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-sudo dpkg -i cloudflared-linux-amd64.deb
-cloudflared tunnel --url http://localhost:8000 &
+uvicorn form_api:app --host 0.0.0.0 --port 8000 &
+cloudflared tunnel --url http://localhost:8000

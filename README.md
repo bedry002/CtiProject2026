@@ -189,13 +189,16 @@ Run this against a candidate SBOM before uploading to confirm it will give you f
 
 ## Scoring explained
 
-Each event receives a confidence score between 0 and 1, computed from three weighted dimensions:
+Each event receives a confidence score between 0 and 1, computed from four weighted dimensions:
 
 | Dimension | Default weight | What it measures |
 |---|---|---|
-| Stack | 50% | SBOM component mentions + keyword hits + technology matches |
-| Sector | 25% | How many of your sector terms appear in the event |
-| TTP | 25% | ATT&CK techniques in the event that target your platform set |
+| Asset | 30% | Matches against components in the organisation's SBOM (by name, CPE, alias). Saturates at one high-criticality match or roughly two medium-criticality matches. |
+| Technology | 30% | Matches against the organisation's broader technology stack from the profile (products, platforms, frameworks named outside the SBOM). |
+| Sector | 30% | How many of the organisation's declared sector terms appear in the event text. |
+| Geography | 10% | Whether the event's geographic context overlaps the organisation's regions of operation. |
+
+Where an event references a CVE that affects a component in the SBOM, the engine additionally applies a confidence floor (see `SCORING_CVE_MATCH_FLOOR` in the configuration reference) so confirmed-exposure events are guaranteed to clear the high-relevance band regardless of how the other three dimensions score.
 
 Events are then banded:
 

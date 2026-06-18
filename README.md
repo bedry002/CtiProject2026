@@ -149,8 +149,6 @@ Component criticality (`high`, `medium`, `low`) controls how much weight a match
 
 ---
 
----
-
 ## Providing your SBOM
 
 The engine reads a CycloneDX-format SBOM from `Assets/SBOM.json` (or whatever path is set in the `ORG_SBOM_PATH` environment variable). There are three ways to get one into the engine.
@@ -287,7 +285,6 @@ NVD_API_KEY=your_nvd_key
 ATTACK_ENABLED=true
 ```
 
----
 ---
 
 ## Evaluation and testing

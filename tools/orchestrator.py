@@ -1,3 +1,12 @@
+"""
+Testbed-only SBOM generator. NOT part of the runtime engine.
+
+This script pulls SBOMs from a Dependency-Track instance running on the
+project's testbed network. In production, organisations provide their own
+SBOM via the /sbom upload page (form_api.py), the file drop at
+Assets/SBOM.json, or the ORG_SBOM_PATH environment variable.
+"""
+
 """SBOM ingestion orchestrator — uploads per-target SBOMs to Dependency-Track,
 fetches enriched component and vulnerability data, and writes a merged CycloneDX
 SBOM to Assets/SBOM.json for the curation pipeline to consume.
@@ -252,7 +261,7 @@ def main() -> None:
 
     load_dotenv(ENV_PATH)
     api_key  = os.getenv("DT_API_KEY")
-    base_url = os.getenv("DT_BASE_URL", "http://192.168.4.38:1010")
+    base_url = os.getenv("DT_BASE_URL")
 
     if not api_key:
         log.error("DT_API_KEY not set — check your .env file at %s", ENV_PATH)

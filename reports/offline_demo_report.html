@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Curation Engine Report</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 2rem; color: #212529; }
+  h1 { color: #0d6efd; } h2 { color: #495057; border-bottom: 1px solid #dee2e6; padding-bottom: 6px; }
+  .stat-grid { display: flex; gap: 1rem; margin: 1rem 0; flex-wrap: wrap; }
+  .stat { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem 1.5rem; min-width: 130px; text-align: center; }
+  .stat .value { font-size: 2rem; font-weight: bold; color: #0d6efd; }
+  .stat .label { color: #6c757d; font-size: 0.85em; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9em; }
+  th { background: #343a40; color: white; padding: 8px 10px; text-align: left; position: sticky; top: 0; }
+  td { padding: 7px 10px; vertical-align: top; border-bottom: 1px solid rgba(0,0,0,0.05); }
+  tr:hover td { filter: brightness(0.96); }
+  .meta { color: #6c757d; font-size: 0.85em; margin-bottom: 1.5rem; }
+</style>
+</head>
+<body>
+<h1>Curation Engine — Scoring Report</h1>
+<p class="meta">Generated: 2026-06-18 11:58 UTC &nbsp;|&nbsp; MISP events evaluated: 25 &nbsp;|&nbsp; Confidence threshold: 0.2</p>
+<h2>Summary</h2>
+<div class="stat-grid">
+  <div class="stat"><div class="value">25</div><div class="label">Events evaluated</div></div>
+  <div class="stat"><div class="value">10</div><div class="label">Above threshold</div></div>
+  <div class="stat"><div class="value" style="color:#1a7a3e">5</div><div class="label">High (&ge;0.50)</div></div>
+  <div class="stat"><div class="value" style="color:#856404">5</div><div class="label">Medium (0.25–0.50)</div></div>
+  <div class="stat"><div class="value" style="color:#721c24">0</div><div class="label">Low (0.10–0.25)</div></div>
+</div>
+<h2>Event Scores</h2>
+<table>
+<thead>
+  <tr>
+    <th>Band</th><th>Event ID</th><th>Date</th><th>Info</th>
+    <th>Confidence<br><small style="font-weight:normal">Asset=SBOM+Kw Tech=Stack Sec=Sector Geo=Geo</small></th>
+    <th>IOCs</th><th>Tech Stack Hits<br><small style="font-weight:normal"><span style="background:#cfe2ff;padding:0 3px;border-radius:3px">blue</span>=SBOM component &nbsp;<span style="background:#e9ecef;padding:0 3px;border-radius:3px">grey</span>=profile term</small></th><th>Threat Context</th>
+  </tr>
+</thead>
+<tbody>
+
+        <tr style="background:#d4edda">
+          <td style="color:#1a7a3e;font-weight:bold;white-space:nowrap">HIGH</td>
+          <td>TP-C-01</td>
+          <td></td>
+          <td>Ransomware operators are actively exploiting a VMware ESXi vulnerability to break out of g</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#1a7a3e;width:50%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.5000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.13)">Asset:1.00 <span title="CVE→component match" style="color:#0d6efd">&#x2731;</span></span> <span title="Technology stack">Tech:0.12</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em">1 IOCs &nbsp;<small style="color:#6c757d">vuln:1 net:0 file:0</small><br><span style="font-size:0.78em"><code style="font-size:0.75em;background:#e9ecef;padding:1px 4px;border-radius:3px">vulnerability:CVE-2025-22224</code></span></td>
+          <td style="font-size:0.82em"><code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">vmware-esxi</code> <code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">vmware-vsphere</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">ransomware</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">vmware esxi vulnerability</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">esxi vulnerability</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">vmware esxi</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">vmware esxi</code></td>
+          <td style="font-size:0.82em"><span style="background:#f8d7da;padding:1px 6px;border-radius:10px;font-size:0.78em;margin:1px;display:inline-block"><b>cve</b> CVE-2025-22224</span></td>
+        </tr>
+        <tr style="background:#d4edda">
+          <td style="color:#1a7a3e;font-weight:bold;white-space:nowrap">HIGH</td>
+          <td>TP-C-02</td>
+          <td></td>
+          <td>An authentication-bypass vulnerability in Fortinet FortiOS is being weaponised in the wild</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#1a7a3e;width:50%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.5000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.06)">Asset:0.13 <span title="CVE→component match" style="color:#0d6efd">&#x2731;</span></span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em">1 IOCs &nbsp;<small style="color:#6c757d">vuln:1 net:0 file:0</small><br><span style="font-size:0.78em"><code style="font-size:0.75em;background:#e9ecef;padding:1px 4px;border-radius:3px">vulnerability:CVE-2024-55591</code></span></td>
+          <td style="font-size:0.82em"><code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">fortinet-fortigate</code></td>
+          <td style="font-size:0.82em"><span style="background:#f8d7da;padding:1px 6px;border-radius:10px;font-size:0.78em;margin:1px;display:inline-block"><b>cve</b> CVE-2024-55591</span></td>
+        </tr>
+        <tr style="background:#d4edda">
+          <td style="color:#1a7a3e;font-weight:bold;white-space:nowrap">HIGH</td>
+          <td>TP-C-03</td>
+          <td></td>
+          <td>Attackers are chaining a Windows SmartScreen bypass to drop payment-card scraping malware </td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#1a7a3e;width:50%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.5000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.06)">Asset:0.27 <span title="CVE→component match" style="color:#0d6efd">&#x2731;</span></span> <span title="Technology stack">Tech:0.12</span> <span title="Sector alignment">Sec:0.36</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em">1 IOCs &nbsp;<small style="color:#6c757d">vuln:1 net:0 file:0</small><br><span style="font-size:0.78em"><code style="font-size:0.75em;background:#e9ecef;padding:1px 4px;border-radius:3px">vulnerability:CVE-2024-38213</code></span></td>
+          <td style="font-size:0.82em"><code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">pos-windows11</code> <code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">server-windows2022</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">windows 11</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">retail</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">point-of-sale</code></td>
+          <td style="font-size:0.82em"><span style="background:#f8d7da;padding:1px 6px;border-radius:10px;font-size:0.78em;margin:1px;display:inline-block"><b>cve</b> CVE-2024-38213</span></td>
+        </tr>
+        <tr style="background:#d4edda">
+          <td style="color:#1a7a3e;font-weight:bold;white-space:nowrap">HIGH</td>
+          <td>TP-C-04</td>
+          <td></td>
+          <td>A PostgreSQL flaw permitting environment-variable manipulation and code execution is being</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#1a7a3e;width:50%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.5000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.13)">Asset:0.20 <span title="CVE→component match" style="color:#0d6efd">&#x2731;</span></span> <span title="Technology stack">Tech:0.12</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em">1 IOCs &nbsp;<small style="color:#6c757d">vuln:1 net:0 file:0</small><br><span style="font-size:0.78em"><code style="font-size:0.75em;background:#e9ecef;padding:1px 4px;border-radius:3px">vulnerability:CVE-2024-10979</code></span></td>
+          <td style="font-size:0.82em"><code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">postgresql</code> <code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">azure-sql</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">postgresql</code></td>
+          <td style="font-size:0.82em"><span style="background:#f8d7da;padding:1px 6px;border-radius:10px;font-size:0.78em;margin:1px;display:inline-block"><b>cve</b> CVE-2024-10979</span></td>
+        </tr>
+        <tr style="background:#d4edda">
+          <td style="color:#1a7a3e;font-weight:bold;white-space:nowrap">HIGH</td>
+          <td>TP-C-05</td>
+          <td></td>
+          <td>The Outlook privilege-escalation bug continues to be exploited via crafted calendar invite</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#1a7a3e;width:50%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.5000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.10)">Asset:0.85 <span title="CVE→component match" style="color:#0d6efd">&#x2731;</span></span> <span title="Technology stack">Tech:0.25</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em">1 IOCs &nbsp;<small style="color:#6c757d">vuln:1 net:0 file:0</small><br><span style="font-size:0.78em"><code style="font-size:0.75em;background:#e9ecef;padding:1px 4px;border-radius:3px">vulnerability:CVE-2023-23397</code></span></td>
+          <td style="font-size:0.82em"><code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">microsoft-365</code> <code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">exchange-online</code> <code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">entra-id</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">and exchange</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">exchange online</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">microsoft 365</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">exchange online</code></td>
+          <td style="font-size:0.82em"><span style="background:#f8d7da;padding:1px 6px;border-radius:10px;font-size:0.78em;margin:1px;display:inline-block"><b>cve</b> CVE-2023-23397</span></td>
+        </tr>
+        <tr style="background:#fff3cd">
+          <td style="color:#856404;font-weight:bold;white-space:nowrap">MEDIUM</td>
+          <td>TP-R-03</td>
+          <td></td>
+          <td>ESXiArgs-style ransomware is encrypting VMware ESXi 8.0 and vSphere datastores at mid-mark</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#856404;width:46%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.4619</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:1.00</span> <span title="Technology stack">Tech:0.25</span> <span title="Sector alignment">Sec:0.18</span> <span title="Geography">Geo:0.33</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">vmware-vsphere</code> <code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">vmware-esxi</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">ransomware</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">esxiargs</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">vmware esxi</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">vmware esxi</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">vsphere</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">e-commerce</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">united states</code></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#fff3cd">
+          <td style="color:#856404;font-weight:bold;white-space:nowrap">MEDIUM</td>
+          <td>TP-R-02</td>
+          <td></td>
+          <td>A Magecart web skimmer campaign is injecting formjacking scripts into the Nginx-fronted ch</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#856404;width:44%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.4461</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:1.00</span> <span title="Technology stack">Tech:0.12</span> <span title="Sector alignment">Sec:0.36</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">nginx-web</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">web skimmer</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">formjacking</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">cardholder data</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">cardholder data</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">nginx</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">e-commerce</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">cardholder data</code></td>
+          <td style="font-size:0.82em"><span style="background:#e2d9f3;padding:1px 6px;border-radius:10px;font-size:0.78em;margin:1px;display:inline-block"><b>actor</b> magecart</span></td>
+        </tr>
+        <tr style="background:#fff3cd">
+          <td style="color:#856404;font-weight:bold;white-space:nowrap">MEDIUM</td>
+          <td>TP-R-05</td>
+          <td></td>
+          <td>Credential-stuffing operators are targeting retail loyalty programme portals backed by Pos</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#856404;width:44%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.4461</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:1.00</span> <span title="Technology stack">Tech:0.12</span> <span title="Sector alignment">Sec:0.36</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">postgresql</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">loyalty fraud</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">and loyalty</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">using leaked</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">leaked credential</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">credential datasets</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">postgresql</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">retail</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">loyalty programme</code></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#fff3cd">
+          <td style="color:#856404;font-weight:bold;white-space:nowrap">MEDIUM</td>
+          <td>TP-R-04</td>
+          <td></td>
+          <td>Scattered Spider operators are running spear-phishing and help-desk social engineering aga</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#856404;width:37%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.3741</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:1.00</span> <span title="Technology stack">Tech:0.25</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">entra-id</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">account takeover</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">phishing</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">account takeover</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">takeover and</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">and lateral</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">lateral movement</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">microsoft entra id</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">azure</code></td>
+          <td style="font-size:0.82em"><span style="background:#e2d9f3;padding:1px 6px;border-radius:10px;font-size:0.78em;margin:1px;display:inline-block"><b>actor</b> scattered spider</span></td>
+        </tr>
+        <tr style="background:#fff3cd">
+          <td style="color:#856404;font-weight:bold;white-space:nowrap">MEDIUM</td>
+          <td>TP-R-01</td>
+          <td></td>
+          <td>FIN7 is deploying memory-scraping point-of-sale malware against US department-store chains</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#856404;width:33%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.3365</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.82</span> <span title="Technology stack">Tech:0.12</span> <span title="Sector alignment">Sec:0.18</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">pos-windows11</code> <code style="font-size:0.78em;background:#cfe2ff;padding:1px 4px;border-radius:3px">server-windows2022</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">pos terminals</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">track data</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">windows 11</code> <code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">point-of-sale</code></td>
+          <td style="font-size:0.82em"><span style="background:#e2d9f3;padding:1px 6px;border-radius:10px;font-size:0.78em;margin:1px;display:inline-block"><b>actor</b> fin7</span></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-O-04</td>
+          <td></td>
+          <td>A surge of automated sign-in attempts using stolen username and password lists hammered a </td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:8%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0822</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.27</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><code style="font-size:0.78em;background:#e9ecef;padding:1px 4px;border-radius:3px">attempts using</code></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-N-01</td>
+          <td></td>
+          <td>Operators at a municipal water-treatment facility in rural Bavaria detected unauthorised c</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:0%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.00</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-N-02</td>
+          <td></td>
+          <td>Several cargo vessels transiting the Strait of Hormuz reported GPS positions drifting mile</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:0%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.00</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-N-03</td>
+          <td></td>
+          <td>A flaw in solar-powered irrigation controllers used across Kenyan smallholder farms allowe</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:0%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.00</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-N-04</td>
+          <td></td>
+          <td>A safety-controller flaw in welding robots on a Japanese automotive assembly line allowed </td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:0%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.00</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-T-01</td>
+          <td></td>
+          <td>After years of drought breaks across the outback, record rains caused two ageing dams to o</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:0%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.00</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-T-02</td>
+          <td></td>
+          <td>Geologists surveying the Atacama announced fresh lithium deposits uncovered after decades </td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:0%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.00</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-T-03</td>
+          <td></td>
+          <td>Dockers at the Port of Rotterdam walked off the job for three days, leaving dozens of cont</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:0%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.00</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-T-04</td>
+          <td></td>
+          <td>A countryside falconry festival drew record crowds this spring as handlers demonstrated pe</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:0%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.00</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-T-05</td>
+          <td></td>
+          <td>Thousands gathered at the central entrance of the new national library for its gala openin</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:0%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.00</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-O-01</td>
+          <td></td>
+          <td>A regional clothing chain discovered that the checkout tills in dozens of its shops had be</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:0%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.00</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-O-02</td>
+          <td></td>
+          <td>Investigators found that someone had slipped hidden code into the online checkout pages of</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:0%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.00</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-O-03</td>
+          <td></td>
+          <td>Attackers broke into the virtualisation cluster that runs a high-street chain's tills and </td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:0%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.00</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-O-05</td>
+          <td></td>
+          <td>Employees at a fashion store group were hit with realistic emails that tricked several int</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:0%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.00</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td style="color:#721c24;font-weight:bold;white-space:nowrap">LOW</td>
+          <td>TP-C-06</td>
+          <td></td>
+          <td>A critical Cisco IOS XE web UI vulnerability is under mass exploitation to implant backdoo</td>
+          <td style="text-align:center">
+            <div style="background:#e9ecef;border-radius:4px;width:200px;height:12px;"><div style="background:#721c24;width:0%;height:12px;border-radius:4px;"></div></div><br>
+            <code style="font-size:0.85em;font-weight:bold">0.0000</code><br>
+            <small style="color:#6c757d;font-size:0.75em"><span title="SBOM component + keyword match (sbom_cve=0.00)">Asset:0.00</span> <span title="Technology stack">Tech:0.00</span> <span title="Sector alignment">Sec:0.00</span> <span title="Geography">Geo:0.00</span></small>
+          </td>
+          <td style="font-size:0.82em">1 IOCs &nbsp;<small style="color:#6c757d">vuln:1 net:0 file:0</small><br><span style="font-size:0.78em"><code style="font-size:0.75em;background:#e9ecef;padding:1px 4px;border-radius:3px">vulnerability:CVE-2023-20198</code></span></td>
+          <td style="font-size:0.82em"><em style='color:#6c757d'>none</em></td>
+          <td style="font-size:0.82em"><span style="background:#f8d7da;padding:1px 6px;border-radius:10px;font-size:0.78em;margin:1px;display:inline-block"><b>cve</b> CVE-2023-20198</span></td>
+        </tr>
+</tbody>
+</table>
+</body>
+</html>

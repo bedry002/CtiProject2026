@@ -149,6 +149,46 @@ Component criticality (`high`, `medium`, `low`) controls how much weight a match
 
 ---
 
+---
+
+## Providing your SBOM
+
+The engine reads a CycloneDX-format SBOM from `Assets/SBOM.json` (or whatever path is set in the `ORG_SBOM_PATH` environment variable). There are three ways to get one into the engine.
+
+### Option 1 — Upload through the web page (recommended)
+
+Once the form API is running (`docker compose up api`), open the SBOM upload page in a browser: http://localhost:8000/sbom.
+
+Drag one or more CycloneDX JSON files onto the page and click **Upload & Merge**. The page accepts multiple files in a single upload and shows the loaded SBOM's component count, criticality breakdown, and the source files that contributed to it. A **Clear SBOM** button resets the file when you want to start fresh.
+
+When more than one file is uploaded (in one go or over multiple uploads), they are merged into `Assets/SBOM.json`:
+
+- Components are deduplicated by `(name, version, cpe)`.
+- Vulnerabilities are deduplicated by `id`.
+- Each component is tagged with a `source_file` property so it is clear which upload contributed it.
+- Components without an explicit `criticality` are assigned one automatically based on CycloneDX `type` (e.g. `operating-system` → high, `library` → medium).
+
+The engine picks up the new SBOM the next time it starts. Restart the pipeline container to apply.
+
+### Option 2 — Drop the file in directly
+
+Place your CycloneDX JSON at `Assets/SBOM.json` (or any path you prefer) and set `ORG_SBOM_PATH` in `.env` accordingly. No upload needed.
+
+### Option 3 — Validate before uploading
+
+A CLI validator is provided to check an SBOM file for the fields the scoring engine relies on:
+
+```bash
+python validate_sbom.py path/to/your-sbom.json
+```
+
+It reports:
+- Components missing a `cpe` (CVE matching will not work for these).
+- Components missing a `criticality` rating (will be auto-assigned at upload time, but flagging is useful to know).
+- Components with no `name` (blocking — these will be rejected at upload).
+
+Run this against a candidate SBOM before uploading to confirm it will give you full scoring coverage.
+
 ## Scoring explained
 
 Each event receives a confidence score between 0 and 1, computed from three weighted dimensions:
@@ -197,6 +237,14 @@ TAGGER_DRY_RUN=true
 LLM_SKIP=true
 ```
 
+### Scoring
+
+```env
+SCORING_CVE_MATCH_FLOOR=0.50
+```
+
+When an event references a CVE that matches a documented risk in your SBOM, the engine guarantees the event clears at least this confidence band — preventing the strongest possible relevance signal (a confirmed flaw in your own software) from being diluted across the weighted average. Set to `0.0` to disable the floor and fall back to pure weighted-average scoring. The default of `0.50` puts confirmed-exposure events in the HIGH band.
+
 ### LLM enrichment (optional)
 
 ```env
@@ -240,6 +288,50 @@ ATTACK_ENABLED=true
 ```
 
 ---
+---
+
+## Evaluation and testing
+
+The engine ships with a labelled evaluation corpus and an offline harness for measuring scoring accuracy against the project's relevance target without needing a live MISP instance.
+
+### Run the engine against the evaluation corpus
+
+```bash
+python eval/run_offline.py --sbom "Assets/SBOM.json" --threshold 0.20
+```
+
+This loads the labelled corpus from `eval/synthetic_corpus.jsonl`, runs the real NER and scoring stages over each event, and prints a per-event table with score, band, CVE-floor activation, and whether the event would be dropped at the chosen threshold. An HTML report is written to `reports/offline_demo_report.html`.
+
+### Compute accuracy across thresholds
+
+```bash
+python eval/score_corpus.py
+python evaluate.py sweep --scored eval/corpus.scored.jsonl --labels eval/synthetic_labels.csv
+```
+
+The first command scores the whole corpus into a JSONL file. The second sweeps across candidate confidence thresholds and prints precision, recall, F1, and accuracy at each, plus the band of thresholds at which the project's ≥80% accuracy target is met.
+
+### The corpus
+
+`eval/synthetic_corpus.jsonl` contains 25 labelled events designed to exercise the engine across six categories:
+
+- Five obviously-relevant retail-sector threats
+- Four obviously-irrelevant events from unrelated sectors (water treatment, maritime, agriculture, automotive)
+- Five substring-trap events where a profile term appears only as part of an unrelated word (e.g. "Dockers" in a port story)
+- Five oblique events that are genuinely relevant but written without profile-term overlap — these probe the LLM enrichment stage rather than the deterministic scorer
+- Five events referencing real CVEs that match components in the testbed SBOM
+- One out-of-stack CVE control event (a Cisco IOS XE flaw — software not in the testbed inventory) that verifies the CVE floor does not promote events whose CVEs miss the SBOM
+
+`eval/synthetic_labels.csv` contains the gold-truth label for each event and which behavioural class it falls under.
+
+### Unit and regression tests
+
+```bash
+python -m pytest tests/ -q
+```
+
+The suite includes regression tests that guard the CVE-to-SBOM floor (`test_cve_match_floor.py`), the accuracy target on the corpus (`test_accuracy_regression.py`), and the LLM-stage safety controls (`test_security_guards.py`).
+
 
 ## Running via Docker
 
@@ -280,3 +372,14 @@ cd reports && python3 -m http.server 8080
 ```bash
 crontab -e
 ```
+
+---
+
+## Testbed-only tooling (`tools/`)
+
+The `tools/` directory contains scripts that are specific to the project's development testbed and are **not** part of the runtime engine.
+
+- `tools/orchestrator.py` — generates an enriched SBOM by polling a Dependency-Track instance running on the testbed network, deduplicating components across containers, and writing the result to `Assets/SBOM.json`. This is a convenience for the testbed only — in any production deployment, the organisation provides their own SBOM via the `/sbom` upload page or by dropping a file at `Assets/SBOM.json`.
+- `tools/config/targets.json` — the orchestrator's list of containers to scan and Dependency-Track project UUIDs. Testbed-specific.
+
+The engine does not import from `tools/`. Removing the directory does not affect engine operation.

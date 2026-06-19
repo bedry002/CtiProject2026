@@ -13,6 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt && python -m spacy download e
 
 COPY . .
 
-RUN chmod +x start.sh
+RUN chmod +x startup.sh
 
 ENTRYPOINT ["./startup.sh"]
